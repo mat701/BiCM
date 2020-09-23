@@ -91,7 +91,11 @@ def edgelist_from_edgelist(edgelist):
     Creates a new edgelist with the indexes of the nodes instead of the names.
     Returns also two dictionaries that keep track of the nodes.
     """
-    edgelist = np.array(edgelist, dtype=np.dtype([('source', np.int64), ('target', np.int64)]))
+    edgelist = np.array([list(edge) for edge in edgelist] )
+    out = np.zeros(np.shape(edgelist)[0], dtype=np.dtype([('source', object), ('target', object)]))
+    out['source'] = edgelist[:, 0]
+    out['target'] = edgelist[:, 1]
+    edgelist = out
     unique_rows, rows_degs = np.unique(edgelist['source'], return_counts=True)
     unique_cols, cols_degs = np.unique(edgelist['target'], return_counts=True)
     rows_dict = dict(enumerate(unique_rows))

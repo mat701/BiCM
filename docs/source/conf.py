@@ -31,6 +31,10 @@ release = '0.2'
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
+    'sphinx.ext.autodoc',
+    'sphinx.ext.doctest',
+    'sphinx.ext.mathjax',
+    'sphinx.ext.viewcode',
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -56,4 +60,9 @@ html_static_path = ['_static']
 
 # Set the master file
 master_doc = 'index'
+
+# Show also documentation for _init_
+autoclass_content = 'both'
+
+autodoc_mock_imports = ['numpy', 'scipy', 'numba', 'multiprocessing', 'tqdm']
 

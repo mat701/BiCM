@@ -6,4 +6,4 @@ Simply install it via pip on your machine:
     
     pip install bicm
 
-Visit https://github.com/mat701/BiCM_beta to download the package instead.
+Visit https://github.com/mat701/BiCM to download the package instead.

@@ -8,7 +8,7 @@ Basic functionalities
 
 To install:
 
-.. code-block::
+.. code-block:: python
     
     pip install bicm
 
@@ -47,20 +47,20 @@ To customize the solver you can alternatively use (in advance) the following met
 
 .. code-block:: python
     
-    myGraph.solve_bicm(light_mode=False, method='newton', initial_guess=None, tolerance=1e-8, max_steps=None, verbose=False, linsearch=True, print_error=True)
+    myGraph.solve_bicm(light_mode=False, method='newton', initial_guess=None, tolerance=1e-8, max_steps=None, verbose=False, linsearch=True, regularise=False, print_error=True)
 
 To get the rows or columns projection of the graph:
 
 .. code-block:: python
     
-    myGraph.get_rows_projection(alpha=0.05, method='poisson', threads_num=4)
-    myGraph.get_rows_projection(alpha=0.05, method='poisson', threads_num=4)
+    myGraph.get_rows_projection()
+    myGraph.get_rows_projection()
 
 Alternatively, to customize the projection:
 
 .. code-block:: python
     
-    myGraph.compute_projection(rows=True, naive=False, alpha=0.05, method='poisson', threads_num=4, progress_bar=True)
+    myGraph.compute_projection(rows=True, alpha=0.05, method='poisson', threads_num=4, progress_bar=True)
 
 Dependencies
 ============
@@ -72,11 +72,10 @@ Guide
 
 .. toctree::
    :maxdepth: 2
-   :numbered:
    
    install
    usage
-   functions
+   bicm
    FAQ
    license
    contacts

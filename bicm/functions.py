@@ -1,10 +1,17 @@
+"""
+This module contains several functions for bipartite networks.
+"""
+
 import numpy as np
 from scipy import sparse
 from numba import jit
-from .Pval_class import PvalClass as pval_class
+from .PvaluesHandler import PvaluesHandler
 
 
 def sample_bicm(avg_mat):
+    """
+    Build a biadjacency matrix sampling from the probability matrix of a BiCM.
+    """
     if not isinstance(avg_mat, np.ndarray):
         avg_mat = np.array(avg_mat)
     dim1, dim2 = avg_mat.shape
@@ -12,17 +19,23 @@ def sample_bicm(avg_mat):
 
 
 def sample_bicm_edgelist(x, y):
+    """
+    Build an edgelist sampling from the fitnesses of a BiCM.
+    """
     edgelist = []
     for i in range(len(x)):
         for j in range(len(y)):
             xy = x[i] * y[j]
             if np.random.uniform() < xy / (1 + xy):
                 edgelist.append((i, j))
-    return(edgelist)
+    return edgelist
 
 
 @jit(nopython=True)
 def edgelist_from_biadjacency_fast(biadjacency):
+    """
+    Build the edgelist of a bipartite network from its biadjacency matrix.
+    """
     edgelist = []
     for i in range(biadjacency.shape[0]):
         for j in range(biadjacency.shape[1]):
@@ -32,6 +45,10 @@ def edgelist_from_biadjacency_fast(biadjacency):
 
 
 def edgelist_from_biadjacency(biadjacency):
+    """
+    Build the edgelist of a bipartite network from its biadjacency matrix.
+    Accounts for sparse matrices and returns a structured array.
+    """
     if sparse.isspmatrix(biadjacency):
         coords = biadjacency.nonzero()
         if (biadjacency.data != 1) > 0:
@@ -47,6 +64,10 @@ def edgelist_from_biadjacency(biadjacency):
 
 
 def biadjacency_from_edgelist(edgelist, fmt='array'):
+    """
+    Build the biadjacency matrix of a bipartite network from its edgelist.
+    Returns a matrix of the type specified by ``fmt``, by default a numpy array.
+    """
     edgelist, rows_deg, cols_deg, rows_dict, cols_dict = edgelist_from_edgelist(edgelist)
     if fmt == 'array':
         biadjacency = np.zeros((len(rows_deg), len(cols_deg)), dtype=int)
@@ -175,6 +196,9 @@ def vmotifs_from_edgelist(edgelist, rows_num, rows_deg):
 
 
 def pvals_validator(pvals, rows_num, alpha=0.05):
+    """
+    Validate p-values given a threshold alpha.
+    """
     sorted_pvals = np.sort(pvals)
     multiplier = 2 * alpha / (rows_num * (rows_num - 1))
     try:
@@ -205,7 +229,7 @@ def projection_calculator(biad_mat, avg_mat, alpha=0.05, rows=True, sparse_mode=
     else:
         v_mat = np.dot(biad_mat, biad_mat.T)
     np.fill_diagonal(v_mat, 0)
-    pval_obj = pval_class()
+    pval_obj = PvaluesHandler()
     pval_obj.set_avg_mat(avg_mat)
     pval_obj.compute_pvals(v_mat, method=method, threads_num=threads_num, progress_bar=progress_bar)
     pval_list = np.array(pval_obj.pval_list, dtype=np.dtype([('source', int), ('target', int), ('pval', float)]))
@@ -224,14 +248,14 @@ def projection_calculator_light(edgelist, x, y, alpha=0.05, rows=True, method='p
     distribution, 'normal' for the normal approximation and 'rna' for the refined normal approximation.
     """
     if not rows:
-        edgelist = [(edge[1], edge[0]) for edge in edgelist]
+        edgelist = np.array([(edge[1], edge[0]) for edge in edgelist], dtype=np.dtype([('rows', np.int64), ('columns', np.int64)]))
     node_type = type(edgelist[0][0])
     edgelist, order = np.unique(edgelist, axis=0, return_index=True)
     edgelist = edgelist[np.argsort(order)]  # np.unique does not preserve the order
     edgelist, rows_degs, cols_degs, rows_dict, cols_dict = edgelist_from_edgelist(edgelist)
     rows_num = len(rows_degs)
     v_list = vmotifs_from_edgelist(edgelist, rows_num, rows_degs)
-    pval_obj = pval_class()
+    pval_obj = PvaluesHandler()
     if rows:
         pval_obj.set_fitnesses(x, y)
     else:

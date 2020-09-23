@@ -1,3 +1,9 @@
+"""
+This module contains the class BipartiteGraph that handles the graph object, and many useful functions. 
+
+The solver functions are located here for compatibility with the numba package.
+"""
+
 import numpy as np
 from numba import jit
 from .functions import *
@@ -10,6 +16,11 @@ import time
 def bicm_from_fitnesses(x, y):
     """
     Rebuilds the average probability matrix of the bicm from the fitnesses
+    
+    :param x: the fitness vector of the rows layer
+    :type x: float
+    :param y: the fitness vector of the columns layer
+    :type y: float
     """
     avg_mat = np.zeros((len(x), len(y)))
     for i in range(len(x)):
@@ -22,7 +33,14 @@ def bicm_from_fitnesses(x, y):
 @jit(nopython=True)
 def loglikelihood_prime_bicm(x0, args):
     """
-    iterative function for loglikelihood gradient bicm
+    Iterative function for loglikelihood gradient BiCM.
+    
+    :param x0: fitnesses vector
+    :type x0: numpy.array
+    :param args: list of arguments needed for the computation
+    :type args: list
+    :returns: log-likelihood of the system
+    :rtype: numpy.array
     """
     r_dseq_rows = args[0]
     r_dseq_cols = args[1]
@@ -51,8 +69,14 @@ def loglikelihood_prime_bicm(x0, args):
 @jit(nopython=True)
 def loglikelihood_bicm(x0, args):
     """
-    loglikelihood function for bicm
-    reduced, already discounting non-zero indexes
+    Log-likelihood function of the reduced BiCM.
+    
+    :param x0: fitnesses vector
+    :type x0: numpy.array
+    :param args: list of arguments needed for the computation
+    :type args: list
+    :returns: log-likelihood of the system
+    :rtype: float
     """
     r_dseq_rows = args[0]
     r_dseq_cols = args[1]
@@ -79,11 +103,14 @@ def loglikelihood_bicm(x0, args):
 @jit(nopython=True)
 def loglikelihood_hessian_bicm(x0, args):
     """
-    :param x0: np.array
-    :param args: list
-    :return: np.array
-
-    log-likelihood hessian: Directed Configuration Model reduced.
+    Log-likelihood hessian of the reduced BiCM.
+    
+    :param x0: fitnesses vector
+    :type x0: numpy.ndarray
+    :param args: list of arguments needed for the computation
+    :type args: list
+    :returns: hessian matrix of the system
+    :rtype: numpy.ndarray
     """
     r_dseq_rows = args[0]
     r_dseq_cols = args[1]
@@ -118,7 +145,14 @@ def loglikelihood_hessian_bicm(x0, args):
 @jit(nopython=True)
 def loglikelihood_hessian_diag_bicm(x0, args):
     """
-    hessian diagonal of bicm loglikelihood
+    Log-likelihood diagonal hessian of the reduced BiCM.
+    
+    :param x0: fitnesses vector
+    :type x0: numpy.array
+    :param args: list of arguments needed for the computation
+    :type args: list
+    :returns: hessian diagonal of the system via a vector
+    :rtype: numpy.array
     """
     r_dseq_rows = args[0]
     r_dseq_cols = args[1]
@@ -149,6 +183,12 @@ def loglikelihood_hessian_diag_bicm(x0, args):
 
 @jit(nopython=True)
 def eqs_root(xx, d_rows, d_cols, multiplier_rows, multiplier_cols, nrows, ncols, out_res):
+    """
+    Equations for the root solver of the reduced BiCM.
+    
+    :param xx: fitnesses vector
+    :type xx: numpy.array
+    """
     out_res -= out_res
 
     for i in range(nrows):
@@ -166,6 +206,12 @@ def eqs_root(xx, d_rows, d_cols, multiplier_rows, multiplier_cols, nrows, ncols,
 
 @jit(nopython=True)
 def jac_root(xx, multiplier_rows, multiplier_cols, nrows, ncols, out_j_t):
+    """
+    Jacobian for the root solver of the reduced BiCM.
+    
+    :param xx: fitnesses vector
+    :type xx: numpy.array
+    """
     out_j_t -= out_j_t
 
     for i in range(nrows):
@@ -182,11 +228,11 @@ def jac_root(xx, multiplier_rows, multiplier_cols, nrows, ncols, out_j_t):
 @jit(nopython=True)
 def iterative_bicm(x0, args):
     """
-    Return the next iterative step for the Bipartite Configuration Model Reduced version.
+    Return the next iterative step for the Bipartite Configuration Model reduced version.
 
     :param numpy.ndarray x0: initial point
-    :param list or tuple args: rows degree sequence, columns degree sequence, rows multipl., cols multipl.
-    :return: next iteration step
+    :param list, tuple args: rows degree sequence, columns degree sequence, rows multipl., cols multipl.
+    :returns: next iteration step
     :rtype: numpy.ndarray
     """
     r_dseq_rows = args[0]
@@ -212,9 +258,9 @@ def iterative_bicm(x0, args):
     return ff
 
 
-def sufficient_decrease_condition(f_old, f_new, alpha, grad_f, p, c1=0):  # , c2=.9):
+def sufficient_decrease_condition(f_old, f_new, alpha, grad_f, p, c1=0):
     """
-    return boolean indicator if upper wolfe condition are respected.
+    Return boolean indicator if upper wolfe condition is respected.
     """
     sup = f_old + c1 * alpha * np.dot(grad_f, p.T)
     return bool(f_new < sup)
@@ -223,7 +269,7 @@ def sufficient_decrease_condition(f_old, f_new, alpha, grad_f, p, c1=0):  # , c2
 def hessian_regulariser_function(B, eps=1e-8):
     """
     Trasform input matrix in a positive defined matrix
-    input matrix should be numpy.array
+    :param numpy.ndarray B: Input matrix
     """
     B = (B + B.transpose()) * 0.5  # symmetrization
     l, e = np.linalg.eigh(B)
@@ -235,7 +281,22 @@ def hessian_regulariser_function(B, eps=1e-8):
 def solver(x0, fun, stop_fun, fun_jac=None, tol=1e-8, eps=1e-3, max_steps=100, method='newton', verbose=False,
            regularise=False, full_return=False, linsearch=True):
     """
-    Find roots of eq. f = 0, using newton, quasinewton or dianati.
+    Find roots of eq. fun = 0, using methods *newton*, *quasi-newton* or *iterative*.
+    
+    :param numpy.ndarray x0: Initial conditions
+    :param fun: Function to be minimized
+    :param stop_fun: Function that is used to determine whether the solver is making progress
+    :param fun_jac: Jacobian of the system, not used for the fixed-point solver
+    :param float tol: Tolerance of the solution, optional
+    :param float eps: Tolerance for the regularization of the matrix, optional
+    :param int max_steps: Maximum number of steps, optional
+    :param str method: Method of choice among *newton*, *quasinewton* or *iterative*, default is newton
+    :param bool, optional verbose: Print elapsed time, errors and iteration steps, optional
+    :param bool regularise: Regularise the matrices in the computations, optional
+    :param bool full_return: Return also elapsed times and errors, optional
+    :param bool linsearch: Implement the linesearch when searching for roots, default is True
+    :returns: Solution of the system
+    :rtype: numpy.ndarray
     """
     tic_all = time.time()
     tic = time.time()
@@ -272,7 +333,6 @@ def solver(x0, fun, stop_fun, fun_jac=None, tol=1e-8, eps=1e-3, max_steps=100, m
                 B = np.maximum(B, B * 0 + 1e-8)
         toc_jacfun += time.time() - tic
         tic = time.time()
-        # f_x = fun(x)
         if method == 'newton':
             dx = np.linalg.solve(B, - f_x)
         elif method == 'quasinewton':
@@ -329,7 +389,30 @@ def solver(x0, fun, stop_fun, fun_jac=None, tol=1e-8, eps=1e-3, max_steps=100, m
         return x
 
 
-class BipartiteGraph:
+class BipartiteGraph():
+    """Bipartite Graph class for undirected binary bipartite networks.
+
+    This class handles the bipartite graph object to compute the 
+    Bipartite Configuration Model (BiCM), which can be used as a null model 
+    for the analysis of undirected and binary bipartite networks. 
+    The class provides methods for calculating the probabilities and matrices
+    of the null model and for projecting the bipartite network on its layers.
+    The object can be initialized passing one of the parameters, or the nodes and
+    edges can be passed later.
+    
+    :param biadjacency: binary input matrix describing the biadjacency matrix
+            of a bipartite graph with the nodes of one layer along the rows
+            and the nodes of the other layer along the columns.
+    :type biadjacency: numpy.array, scipy.sparse, list, optional
+    :param edgelist: list of edges containing couples (row_node, col_node) of
+        nodes forming an edge. each element in the couples must belong to
+        the respective layer.
+    :type edgelist: list, numpy.array, optional
+    :param degree_sequences: couple of lists describing the degree sequences
+        of both layers.
+    :type degree_sequences: list, numpy.array, tuple, optional
+    """
+    
     def __init__(self, biadjacency=None, edgelist=None, degree_sequences=None):
         self.n_rows = None
         self.n_cols = None
@@ -386,7 +469,22 @@ class BipartiteGraph:
         self.solution_converged = None
 
     def _initialize_graph(self, biadjacency=None, edgelist=None, degree_sequences=None):
-
+        """
+        Internal method for the initialization of the graph.
+        Use the setter methods instead.
+        
+        :param biadjacency: binary input matrix describing the biadjacency matrix
+                of a bipartite graph with the nodes of one layer along the rows
+                and the nodes of the other layer along the columns.
+        :type biadjacency: numpy.array, scipy.sparse, list, optional
+        :param edgelist: list of edges containing couples (row_node, col_node) of
+            nodes forming an edge. each element in the couples must belong to
+            the respective layer.
+        :type edgelist: list, numpy.array, optional
+        :param degree_sequences: couple of lists describing the degree sequences
+            of both layers.
+        :type degree_sequences: list, numpy.array, tuple, optional
+        """
         if biadjacency is not None:
             if not isinstance(biadjacency, (list, np.ndarray)) and not scipy.sparse.isspmatrix(biadjacency):
                 raise TypeError('The biadjacency matrix must be passed as a list or numpy array or scipy sparse matrix')
@@ -437,6 +535,9 @@ class BipartiteGraph:
             self.n_nodes = self.n_rows + self.n_cols
 
     def degree_reduction(self, rows_deg=None, cols_deg=None):
+        """Reduce the degree sequences to contain no repetition of the degrees.
+        The two parameters rows_deg and cols_deg are passed if there were some full or empty rows or columns.
+        """
         if rows_deg is None:
             rows_deg = self.rows_deg
         else:
@@ -456,8 +557,9 @@ class BipartiteGraph:
         self.is_reduced = True
 
     def _set_initial_guess(self):
-        # The preselected initial guess works best usually. The suggestion is, if this does not work, trying with random initial conditions several times.
-        # If you want to customize the initial guess, remember that the code starts with a reduced number of rows and columns.
+        """
+        Internal method to set the initial point of the solver.
+        """
         if self.initial_guess is None:
             self.r_x = self.r_rows_deg / (
                         np.sqrt(self.r_n_edges) + 1)  # This +1 increases the stability of the solutions.
@@ -517,6 +619,11 @@ class BipartiteGraph:
         return r_biad_mat
 
     def _initialize_fitnesses(self):
+        """
+        Internal method to initialize the fitnesses of the BiCM. 
+        If there are empty rows, the corresponding fitnesses are set to 0, 
+        while for full rows the corresponding columns are set to numpy.inf.
+        """
         self.x = np.zeros(self.n_rows, dtype=float)
         self.y = np.zeros(self.n_cols, dtype=float)
         good_rows = np.arange(self.n_rows)
@@ -550,6 +657,10 @@ class BipartiteGraph:
         self.fixed_cols = bad_cols
 
     def _initialize_problem(self, rows_deg=None, cols_deg=None):
+        """
+        Initializes the solver reducing the degree sequences, setting the initial guess and setting the functions for the solver.
+        The two parameters rows_deg and cols_deg are passed if there were some full or empty rows or columns.
+        """
         if ~self.is_reduced:
             self.degree_reduction(rows_deg=rows_deg, cols_deg=cols_deg)
         self._set_initial_guess()
@@ -581,24 +692,39 @@ class BipartiteGraph:
                 raise ValueError('Method must be "newton","quasinewton", "fixed-point" or "root".')
 
     def _equations_root(self, x):
+        """
+        Equations for the *root* solver
+        """
         eqs_root(x, self.r_rows_deg, self.r_cols_deg,
                  self.rows_multiplicity, self.cols_multiplicity,
                  self.r_n_rows, self.r_n_cols, self.residuals)
 
     def _jacobian_root(self, x):
+        """
+        Jacobian for the *root* solver
+        """
         jac_root(x, self.rows_multiplicity, self.cols_multiplicity,
                  self.r_n_rows, self.r_n_cols, self.J_T)
 
     def _residuals_jacobian(self, x):
+        """
+        Residuals and jacobian for the *root* solver
+        """
         self._equations_root(x)
         self._jacobian_root(x)
         return self.residuals, self.J_T
 
     def _clean_root(self):
+        """
+        Clean variables used for the *root* solver
+        """
         self.J_T = None
         self.residuals = None
 
     def _solve_root(self):
+        """
+        Internal *root* solver
+        """
         x0 = self.x0
         opz = {'col_deriv': True, 'diag': None}
         res = opt.root(self._residuals_jacobian, x0,
@@ -607,6 +733,12 @@ class BipartiteGraph:
         return res.x
 
     def _check_solution(self, return_error=False, in_place=False):
+        """
+        Check if the solution of the BiCM is compatible with the degree sequences of the graph.
+        :param bool return_error: If this is set to true, return 1 if the solution is not correct, 0 otherwise.
+        :param bool in_place: check also the error in the single entries of the matrices. 
+        Always False unless comparing two different solutions.
+        """
         if self.biadjacency is not None and self.avg_mat is not None:
             return check_sol(self.biadjacency, self.avg_mat, return_error=return_error, in_place=in_place)
         else:
@@ -616,6 +748,10 @@ class BipartiteGraph:
                                    return_error=return_error)
 
     def _set_solved_problem(self, solution):
+        """
+        Sets the solution of the problem.
+        :param numpy.ndarray solution: A numpy array containing that reduced fitnesses of the two layers, consecutively.
+        """
         if self.x is None:
             self.x = np.zeros(self.n_rows)
         if self.y is None:
@@ -627,6 +763,9 @@ class BipartiteGraph:
         self.y[self.nonfixed_cols] = self.r_y[self.r_invert_cols_deg]
 
     def _solve_bicm_full(self):
+        """
+        Internal method for computing the solution of the BiCM via matrices.
+        """
         r_biadjacency = self.initialize_avg_mat()
         if len(r_biadjacency) > 0:  # Every time the matrix is not perfectly nested
             rows_deg = self.rows_deg[self.nonfixed_rows]
@@ -643,6 +782,9 @@ class BipartiteGraph:
             self.avg_mat[self.nonfixed_rows[:, None], self.nonfixed_cols] = np.copy(r_avg_mat)
 
     def _solve_bicm_light(self):
+        """
+        Internal method for computing the solution of the BiCM via degree sequences.
+        """
         self._initialize_fitnesses()
         rows_deg = self.rows_deg[self.nonfixed_rows]
         cols_deg = self.cols_deg[self.nonfixed_cols]
@@ -656,6 +798,9 @@ class BipartiteGraph:
         self._set_solved_problem(sol)
 
     def _set_parameters(self, method, initial_guess, tolerance, regularise, max_steps, verbose, linsearch):
+        """
+        Internal method for setting the parameters of the solver.
+        """
         self.method = method
         self.initial_guess = initial_guess
         self.tolerance = tolerance
@@ -672,6 +817,20 @@ class BipartiteGraph:
 
     def solve_bicm(self, light_mode=None, method='newton', initial_guess=None, tolerance=1e-8, max_steps=None,
                    verbose=False, linsearch=True, regularise=False, print_error=True):
+        """Solve the BiCM of the graph.
+        It does not return the solution, use the getter methods instead.
+        
+        :param bool light_mode: Doesn't use matrices in the computation if this is set to True.
+            If the graph has been initialized without the matrix, the light mode is used regardless.
+        :param str method: Method of choice among *newton*, *quasinewton* or *iterative*, default is newton
+        :param str initial_guess: Initial guess of choice among *None*, *random*, *uniform* or *degrees*, default is None
+        :param float tolerance: Tolerance of the solution, optional
+        :param int max_steps: Maximum number of steps, optional
+        :param bool, optional verbose: Print elapsed time, errors and iteration steps, optional
+        :param bool linsearch: Implement the linesearch when searching for roots, default is True
+        :param bool regularise: Regularise the matrices in the computations, optional
+        :param bool print_error: Print the final error of the solution
+        """
         if not self.is_initialized:
             print('Graph is not initialized. I can\'t compute the BiCM.')
             return
@@ -696,6 +855,12 @@ class BipartiteGraph:
         self.is_randomized = True
 
     def get_bicm_matrix(self):
+        """Get the matrix of probabilities of the BiCM.
+        If the BiCM has not been computed, it also computes it with standard settings.
+        
+        :returns: The average matrix of the BiCM
+        :rtype: numpy.ndarray
+        """
         if not self.is_initialized:
             raise ValueError('Graph is not initialized. I can\'t compute the BiCM')
         elif not self.is_randomized:
@@ -707,6 +872,11 @@ class BipartiteGraph:
             return self.avg_mat
 
     def get_bicm_fitnesses(self):
+        """Get the fitnesses of the BiCM.
+        If the BiCM has not been computed, it also computes it with standard settings.
+        
+        :returns: The fitnesses of the BiCM in the format **rows fitnesses, columns fitnesses**
+        """
         if not self.is_initialized:
             raise ValueError('Graph is not initialized. I can\'t compute the BiCM')
         elif not self.is_randomized:
@@ -714,6 +884,18 @@ class BipartiteGraph:
         return self.x, self.y
 
     def compute_projection(self, rows=True, alpha=0.05, method='poisson', threads_num=4, progress_bar=True):
+        """Compute the projection of the network on the rows or columns layer.
+        If the BiCM has not been computed, it also computes it with standard settings.
+        This is the most customizable method for the pvalues computation.
+        
+        :param bool rows: True if requesting the rows projection.
+        :param float alpha: Threshold for the FDR validation.
+        :param str method: Method for the approximation of the pvalues computation.
+            Implemented methods are *poisson*, *poibin*, *normal*, *rna*.
+        :param threads_num: Number of threads to use for the parallelization. If it is set to 1,
+            the computation is not parallelized.
+        :param bool progress_bar: Show progress bar of the pvalues computation.
+        """
         if self.edgelist is None:
             print('There are no edges in the network. I can\'t compute the projection.')
             return
@@ -722,7 +904,7 @@ class BipartiteGraph:
                 print('First I have to compute the BiCM. Computing...')
                 self.solve_bicm()
             if rows:
-                if self.x is None and self.y is None:
+                if self.avg_mat is not None and self.biadjacency is not None:
                     self.rows_pvals = projection_calculator(self.biadjacency, self.avg_mat,
                                                             rows=True, alpha=alpha, method=method,
                                                             threads_num=threads_num, return_pvals=True,
@@ -735,7 +917,7 @@ class BipartiteGraph:
                 self.projected_rows_edgelist = self._projection_from_pvals(rows=True, alpha=alpha)
                 self.is_rows_projected = True
             else:
-                if self.x is None and self.y is None:
+                if self.avg_mat is not None and self.biadjacency is not None:
                     self.cols_pvals = projection_calculator(self.biadjacency, self.avg_mat,
                                                             rows=False, alpha=alpha, method=method,
                                                             threads_num=threads_num, return_pvals=True,
@@ -749,6 +931,10 @@ class BipartiteGraph:
                 self.is_cols_projected = True
 
     def _projection_from_pvals(self, rows=True, alpha=0.05):
+        """Internal method to build the projected network from pvalues.
+        
+        :param float alpha:  Threshold for the FDR validation. 
+        """
         if rows:
             eff_fdr_th = pvals_validator(self.rows_pvals['pval'], self.n_rows, alpha=alpha)
             return np.array([(v[0], v[1]) for v in self.rows_pvals if v[2] <= eff_fdr_th])
@@ -757,6 +943,19 @@ class BipartiteGraph:
             return np.array([(v[0], v[1]) for v in self.cols_pvals if v[2] <= eff_fdr_th])
 
     def get_rows_projection(self, alpha=0.05, method='poisson', threads_num=4):
+        """Get the projected network on the rows layer of the graph.
+        
+        :param alpha: threshold for the validation of the projected edges.
+        :type alpha: float, optional
+        :param method: approximation method for the calculation of the p-values.
+            Implemented choices are: poisson, poibin, normal, rna
+        :type method: str, optional
+        :param threads_num: number of threads to use for the parallelization. If it is set to 1,
+            the computation is not parallelized.
+        :type threads_num: int, optional
+        :returns: edgelist of the projected network on the rows layer
+        :rtype: numpy.array
+        """
         if not self.is_rows_projected:
             print('First I have to compute the projection on the rows layer. Computing...')
             self.compute_projection(rows=True, alpha=alpha, method=method, threads_num=threads_num)
@@ -767,6 +966,19 @@ class BipartiteGraph:
                 [(self.rows_dict[edge[0]], self.rows_dict[edge[1]]) for edge in self.projected_rows_edgelist])
 
     def get_cols_projection(self, alpha=0.05, method='poisson', threads_num=4):
+        """Get the projected network on the columns layer of the graph.
+        
+        :param alpha: threshold for the validation of the projected edges.
+        :type alpha: float, optional
+        :param method: approximation method for the calculation of the p-values.
+            Implemented choices are: poisson, poibin, normal, rna
+        :type method: str, optional
+        :param threads_num: number of threads to use for the parallelization. If it is set to 1,
+            the computation is not parallelized.
+        :type threads_num: int, optional
+        :returns: edgelist of the projected network on the columns layer
+        :rtype: numpy.array
+        """
         if not self.is_cols_projected:
             print('First I have to compute the projection on the columns layer. Computing...')
             self.compute_projection(rows=False, alpha=alpha, method=method, threads_num=threads_num)
@@ -777,24 +989,46 @@ class BipartiteGraph:
                 [(self.cols_dict[edge[0]], self.cols_dict[edge[1]]) for edge in self.projected_cols_edgelist])
 
     def set_biadjacency_matrix(self, biadjacency):
+        """Set the biadjacency matrix of the graph.
+        
+        :param biadjacency: binary input matrix describing the biadjacency matrix
+                of a bipartite graph with the nodes of one layer along the rows
+                and the nodes of the other layer along the columns.
+        :type biadjacency: numpy.array, scipy.sparse, list
+        """
         if self.is_initialized:
             print('Graph already contains edges or has a degree sequence. Use clean_edges() first.')
         else:
             self._initialize_graph(biadjacency=biadjacency)
 
     def set_edgelist(self, edgelist):
+        """Set the edgelist of the graph.
+        
+        :param edgelist: list of edges containing couples (row_node, col_node) of
+            nodes forming an edge. each element in the couples must belong to
+            the respective layer.
+        :type edgelist: list, numpy.array
+        """
         if self.is_initialized:
             print('Graph already contains edges or has a degree sequence. Use clean_edges() first.')
         else:
             self._initialize_graph(edgelist=edgelist)
 
     def set_degree_sequences(self, degree_sequences):
+        """Set the degree sequence of the graph.
+        
+        :param degree_sequences: couple of lists describing the degree sequences
+            of both layers.
+        :type degree_sequences: list, numpy.array, tuple
+        """
         if self.is_initialized:
             print('Graph already contains edges or has a degree sequence. Use clean_edges() first.')
         else:
             self._initialize_graph(degree_sequences=degree_sequences)
 
     def clean_edges(self):
+        """Clean the edges of the graph.
+        """
         self.biadjacency = None
         self.edgelist = None
         self.rows_deg = None

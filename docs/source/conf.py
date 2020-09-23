@@ -17,12 +17,12 @@
 
 # -- Project information -----------------------------------------------------
 
-project = 'BiCM_Beta'
-copyright = '2020, MrBrown'
-author = 'MrBrown'
+project = 'BiCM'
+copyright = '2020, Matteo Bruno'
+author = 'Matteo Bruno'
 
 # The full version, including alpha/beta/rc tags
-release = '0.1'
+release = '0.2'
 
 
 # -- General configuration ---------------------------------------------------

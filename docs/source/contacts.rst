@@ -1,4 +1,6 @@
 Contacts
 ======
 
-For any request or doubt contact matteo.bruno@imtlucca.it or mat701@hotmail.it
+For any question contact matteo.bruno@imtlucca.it
+
+Visit https://meh.imtlucca.it for more information about maximum entropy models.

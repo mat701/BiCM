@@ -8,7 +8,7 @@ The paper of reference is at https://www.nature.com/articles/srep10595?origin=pp
 
 Github repository::
 
-    https://github.com/mat701/BiCM_beta
+    https://github.com/mat701/BiCM
 
 Author: Matteo Bruno
 """

@@ -1,4 +1,4 @@
-BiCM classes
+API
 ============
 
 BipartiteGraph
@@ -19,7 +19,7 @@ PvaluesHandler
     :show-inheritance:
     :private-members:
 
-poibin class
+poibin
 ------------------
 
 .. automodule:: bicm.poibin
@@ -28,7 +28,7 @@ poibin class
     :show-inheritance:
     :private-members:
 
-Functions module
+functions
 ---------------------
 
 .. automodule:: bicm.functions
@@ -36,12 +36,3 @@ Functions module
     :undoc-members:
     :show-inheritance:
     :private-members:
-
-
-Module contents
----------------
-
-.. automodule:: bicm
-    :members:
-    :undoc-members:
-    :show-inheritance:

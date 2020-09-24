@@ -1,10 +1,10 @@
 How to use the BiCM package
-=========
+==================================
 
 With this package you can solve the maximum entropy bipartite configuration model (BiCM) of a real network. The BiCM is used for comparing the properties of a real network with the set of networks with the same degrees. For example, your network might have a high value of assortativity, but the average assortativity of the set of networks with the same degree sequence is "similar" to the one of the real network.
 
 The BipartiteGraph object
-------
+--------------------------------------------
 
 To manage the real network, in the BiCM package you can create a BipartiteGraph object that will contain the information of your network. To create a BipartiteGraph object:
 
@@ -32,7 +32,7 @@ You can clear your graph by using
 Note that if your network is not huge, the best way to use the BiCM package is to work with the biadjacency matrix since it will automatically take care of possible isolated nodes or fully connected nodes.
 
 Computing the BiCM
-------
+--------------------------------------------
 
 After you have created the BipartiteGraph object, you can compute the bicm of your network via
 
@@ -46,7 +46,7 @@ The method "solve_bicm" will actually solve the equations and you can customize 
 If you use one of the get methods before solving the bicm, the solver will start with default options.
 
 Computing the projected networks
-------
+--------------------------------------------
 
 To compute the projection of a bipartite network on one layer (rows or columns layer), the BiCM package uses the probabilities of the model to understand if two nodes behave similarly and should be connected in the projection. This makes sure that two nodes with high degrees are not automatically linked because they share a number of common neighbors, but will first discount the information about the degrees. See https://iopscience.iop.org/article/10.1088/1367-2630/aa6b38/meta for the details of this projection method.
 

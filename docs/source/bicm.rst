@@ -1,8 +1,8 @@
 API
 ============
 
-BipartiteGraph
---------------------------
+BipartiteGraph class
+----------------------------------
 
 .. automodule:: bicm.BipartiteGraph
     :members:
@@ -10,8 +10,8 @@ BipartiteGraph
     :show-inheritance:
     :private-members:
 
-PvaluesHandler
------------------------
+PvaluesHandler class
+----------------------------------
 
 .. automodule:: bicm.PvaluesHandler
     :members:
@@ -19,8 +19,8 @@ PvaluesHandler
     :show-inheritance:
     :private-members:
 
-poibin
-------------------
+poibin class
+----------------------------------
 
 .. automodule:: bicm.poibin
     :members:
@@ -28,8 +28,8 @@ poibin
     :show-inheritance:
     :private-members:
 
-functions
----------------------
+functions module
+----------------------------------
 
 .. automodule:: bicm.functions
     :members:

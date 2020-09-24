@@ -3,7 +3,7 @@ How to install the BiCM package
 
 Simply install it via pip on your machine:
 
-.. code-block::
+.. code-block:: python
     
     pip install bicm
 

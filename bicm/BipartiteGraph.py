@@ -144,21 +144,14 @@ def loglikelihood_hessian_bicm(x0, args):
 
 @jit(nopython=True)
 def loglikelihood_hessian_diag_bicm(x0, args):
-    """
-    Log-likelihood diagonal hessian of the reduced BiCM.
+    """Log-likelihood diagonal hessian of the reduced BiCM.
     
-    Parameters
-    ----------
-    arg1 : int
-        Description of arg1
-    arg2 : str
-        Description of arg2
-
-    Returns
-    -------
-    int
-        Description of return value
-    """
+    :param x0: fitnesses vector
+    :type x0: numpy.ndarray
+    :param args: list of arguments needed for the computation
+    :type args: list
+    :returns: hessian matrix of the system
+    :rtype: numpy.ndarray"""
     r_dseq_rows = args[0]
     r_dseq_cols = args[1]
     rows_multiplicity = args[2]

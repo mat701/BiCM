@@ -27,6 +27,7 @@ def v_probs_from_fitnesses(x_i, x_j, y):
 @jit(nopython=True)
 def v_list_from_v_mat(v_mat):
     """Build a list of couples of nodes with the relative number of observed v-motifs.
+    
     :param numpy.ndarray v_mat: The matrix of observed number of v-motifs.
     Each entry *i,j* is the number of v-motifs between node i and node j (belonging to the same layer)
     :returns: A list of triplets **(node_i, node_j, v_ij)**
@@ -81,6 +82,7 @@ class PvaluesHandler:
     def pval_calculator(self, v):
         """
         Calculate the p-value of the v-motifs number of two vertices
+        
         :param v: a list containing the index of the first vertex, index of the second vertex, number of V-motifs between them.
         :returns: a list containing the index of the first vertex, index of the second vertex, the relative p-value.
         """
@@ -121,6 +123,7 @@ class PvaluesHandler:
     def pval_calculator_poibin(self, v_couple):
         """
         Compute the p-values of a list of couples of nodes.
+        
         :param list v_couple: A list of triplets, each one containing (index of the first node, index of the second node, observed number of v-motifs).
         All nodes that are first in the couples must have the same degree (and fitness), and the same goes for the second nodes.
         This speeds up the computation, calculating a Poibin distribution only once per couple of degrees.

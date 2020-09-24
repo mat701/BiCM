@@ -109,13 +109,13 @@ def edgelist_from_edgelist(edgelist):
 
 def check_sol(biad_mat, avg_bicm, return_error=False, in_place=False):
     """
-        This function prints the rows sums differences between two matrices, that originally are the biadjacency matrix and its bicm average matrix.
-        The intended use of this is to check if an average matrix is actually a solution for a bipartite configuration model.
+    This function prints the rows sums differences between two matrices, that originally are the biadjacency matrix and its bicm average matrix.
+    The intended use of this is to check if an average matrix is actually a solution for a bipartite configuration model.
 
-        If return_error is set to True, it returns 1 if the sum of the differences is bigger than 1.
+    If return_error is set to True, it returns 1 if the sum of the differences is bigger than 1.
 
-        If in_place is set to True, it checks and sums also the total error entry by entry.
-        The intended use of this is to check if two solutions are the same solution.
+    If in_place is set to True, it checks and sums also the total error entry by entry.
+    The intended use of this is to check if two solutions are the same solution.
     """
     error = 0
     if (avg_bicm < 0).sum() != 0:

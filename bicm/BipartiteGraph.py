@@ -31,155 +31,6 @@ def bicm_from_fitnesses(x, y):
 
 
 @jit(nopython=True)
-def loglikelihood_prime_bicm(x0, args):
-    """
-    Iterative function for loglikelihood gradient BiCM.
-    
-    :param x0: fitnesses vector
-    :type x0: numpy.array
-    :param args: list of arguments needed for the computation
-    :type args: list
-    :returns: log-likelihood of the system
-    :rtype: numpy.array
-    """
-    r_dseq_rows = args[0]
-    r_dseq_cols = args[1]
-    rows_multiplicity = args[2]
-    cols_multiplicity = args[3]
-    num_rows = len(r_dseq_rows)
-    num_cols = len(r_dseq_cols)
-    x = x0[:num_rows]
-    y = x0[num_rows:]
-
-    f = np.zeros(len(x0))
-    flag = True
-
-    for i in range(num_rows):
-        for j in range(num_cols):
-            denom = 1 + x[i] * y[j]
-            f[i] -= y[j] * cols_multiplicity[j] / denom
-            f[j + num_rows] -= x[i] * rows_multiplicity[i] / denom
-            if flag:
-                f[j + num_rows] += r_dseq_cols[j] / y[j]
-        f[i] += r_dseq_rows[i] / x[i]
-        flag = False
-    return f
-
-
-@jit(nopython=True)
-def loglikelihood_bicm(x0, args):
-    """
-    Log-likelihood function of the reduced BiCM.
-    
-    :param x0: fitnesses vector
-    :type x0: numpy.array
-    :param args: list of arguments needed for the computation
-    :type args: list
-    :returns: log-likelihood of the system
-    :rtype: float
-    """
-    r_dseq_rows = args[0]
-    r_dseq_cols = args[1]
-    rows_multiplicity = args[2]
-    cols_multiplicity = args[3]
-    num_rows = len(r_dseq_rows)
-    num_cols = len(r_dseq_cols)
-    x = x0[:num_rows]
-    y = x0[num_rows:]
-    flag = True
-
-    f = 0
-    for i in range(num_rows):
-        f += rows_multiplicity[i] * r_dseq_rows[i] * np.log(x[i])
-        for j in range(num_cols):
-            if flag:
-                f += cols_multiplicity[j] * r_dseq_cols[j] * np.log(y[j])
-            f -= rows_multiplicity[i] * cols_multiplicity[j] * np.log(1 + x[i] * y[j])
-        flag = False
-
-    return f
-
-
-@jit(nopython=True)
-def loglikelihood_hessian_bicm(x0, args):
-    """
-    Log-likelihood hessian of the reduced BiCM.
-    
-    :param x0: fitnesses vector
-    :type x0: numpy.ndarray
-    :param args: list of arguments needed for the computation
-    :type args: list
-    :returns: hessian matrix of the system
-    :rtype: numpy.ndarray
-    """
-    r_dseq_rows = args[0]
-    r_dseq_cols = args[1]
-    rows_multiplicity = args[2]
-    cols_multiplicity = args[3]
-    num_rows = len(r_dseq_rows)
-    num_cols = len(r_dseq_cols)
-    x = x0[:num_rows]
-    y = x0[num_rows:]
-
-    out = np.zeros((len(x0), len(x0)))
-    x2 = x ** 2
-    y2 = y ** 2
-    flag = True
-    
-    for h in range(num_rows):
-        out[h, h] -= r_dseq_rows[h] / x2[h]
-        for i in range(num_cols):
-            if flag:
-                out[i + num_rows, i + num_rows] -= r_dseq_cols[i] / y2[i]
-            multiplier = cols_multiplicity[i] / ((1 + x[h] * y[i]) ** 2)
-            out[h, h] += y2[i] * multiplier
-            out[h, i + num_rows] = - multiplier
-            multiplier_h = rows_multiplicity[h] / ((1 + x[h] * y[i]) ** 2)
-            out[i + num_rows, i + num_rows] += x2[h] * multiplier_h
-            out[i + num_rows, h] = - multiplier_h
-        flag = False
-
-    return out
-
-
-@jit(nopython=True)
-def loglikelihood_hessian_diag_bicm(x0, args):
-    """Log-likelihood diagonal hessian of the reduced BiCM.
-    
-    :param x0: fitnesses vector
-    :type x0: numpy.ndarray
-    :param args: list of arguments needed for the computation
-    :type args: list
-    :returns: hessian matrix of the system
-    :rtype: numpy.ndarray"""
-    r_dseq_rows = args[0]
-    r_dseq_cols = args[1]
-    rows_multiplicity = args[2]
-    cols_multiplicity = args[3]
-    num_rows = len(r_dseq_rows)
-    num_cols = len(r_dseq_cols)
-    x = x0[:num_rows]
-    y = x0[num_rows:]
-
-    f = np.zeros(num_rows + num_cols)
-    x2 = x ** 2
-    y2 = y ** 2
-    flag = True
-
-    for i in range(num_rows):
-        for j in range(num_cols):
-            denom = (1 + x[i] * y[j]) ** 2
-            f[i] += cols_multiplicity[j] * y2[j] / denom
-            f[j + num_rows] += rows_multiplicity[i] * x2[i] / denom
-            if flag:
-                f[j + num_rows] -= r_dseq_cols[j] / y2[j]
-        f[i] -= r_dseq_rows[i] / x2[i]
-        flag = False
-
-    return f
-
-
-@jit(nopython=True)
 def eqs_root(xx, d_rows, d_cols, multiplier_rows, multiplier_cols, nrows, ncols, out_res):
     """
     Equations for the root solver of the reduced BiCM.
@@ -202,25 +53,17 @@ def eqs_root(xx, d_rows, d_cols, multiplier_rows, multiplier_cols, nrows, ncols,
         out_res[j + nrows] -= d_cols[j]
 
 
-@jit(nopython=True)
-def jac_root(xx, multiplier_rows, multiplier_cols, nrows, ncols, out_j_t):
+def hessian_regulariser_function(B, eps=1e-8):
     """
-    Jacobian for the root solver of the reduced BiCM.
+    Trasform input matrix in a positive defined matrix
     
-    :param xx: fitnesses vector
-    :type xx: numpy.array
+    :param numpy.ndarray B: Input matrix
     """
-    out_j_t -= out_j_t
-
-    for i in range(nrows):
-        for j in range(ncols):
-            denom_ij = (1 + xx[i] * xx[nrows + j]) ** 2
-            multiplier_ij_i = xx[i] / denom_ij
-            multiplier_ij_j = xx[nrows + j] / denom_ij
-            out_j_t[i, i] += multiplier_cols[j] * multiplier_ij_j
-            out_j_t[j + nrows, j + nrows] += multiplier_rows[i] * multiplier_ij_i
-            out_j_t[i, j + nrows] += multiplier_rows[i] * multiplier_ij_j
-            out_j_t[j + nrows, i] += multiplier_cols[j] * multiplier_ij_i
+    B = (B + B.transpose()) * 0.5  # symmetrization
+    l, e = np.linalg.eigh(B)
+    ll = np.array([0 if li > eps else eps - li for li in l])
+    Bf = np.dot(np.dot(e, (np.diag(ll) + np.diag(l))), e.transpose())
+    return Bf
 
 
 @jit(nopython=True)
@@ -256,24 +99,173 @@ def iterative_bicm(x0, args):
     return ff
 
 
-def sufficient_decrease_condition(f_old, f_new, alpha, grad_f, p, c1=0):
+@jit(nopython=True)
+def jac_root(xx, multiplier_rows, multiplier_cols, nrows, ncols, out_j_t):
     """
-    Return boolean indicator if upper wolfe condition is respected.
+    Jacobian for the root solver of the reduced BiCM.
+    
+    :param xx: fitnesses vector
+    :type xx: numpy.array
     """
-    sup = f_old + c1 * alpha * np.dot(grad_f, p.T)
-    return bool(f_new < sup)
+    out_j_t -= out_j_t
+
+    for i in range(nrows):
+        for j in range(ncols):
+            denom_ij = (1 + xx[i] * xx[nrows + j]) ** 2
+            multiplier_ij_i = xx[i] / denom_ij
+            multiplier_ij_j = xx[nrows + j] / denom_ij
+            out_j_t[i, i] += multiplier_cols[j] * multiplier_ij_j
+            out_j_t[j + nrows, j + nrows] += multiplier_rows[i] * multiplier_ij_i
+            out_j_t[i, j + nrows] += multiplier_rows[i] * multiplier_ij_j
+            out_j_t[j + nrows, i] += multiplier_cols[j] * multiplier_ij_i
 
 
-def hessian_regulariser_function(B, eps=1e-8):
+@jit(nopython=True)
+def loglikelihood_bicm(x0, args):
     """
-    Trasform input matrix in a positive defined matrix
-    :param numpy.ndarray B: Input matrix
+    Log-likelihood function of the reduced BiCM.
+    
+    :param numpy.ndarray x0: 1D fitnesses vector
+    :param args: list of arguments needed for the computation
+    :type args: list or tuple
+    :returns: log-likelihood of the system
+    :rtype: float
     """
-    B = (B + B.transpose()) * 0.5  # symmetrization
-    l, e = np.linalg.eigh(B)
-    ll = np.array([0 if li > eps else eps - li for li in l])
-    Bf = np.dot(np.dot(e, (np.diag(ll) + np.diag(l))), e.transpose())
-    return Bf
+    r_dseq_rows = args[0]
+    r_dseq_cols = args[1]
+    rows_multiplicity = args[2]
+    cols_multiplicity = args[3]
+    num_rows = len(r_dseq_rows)
+    num_cols = len(r_dseq_cols)
+    x = x0[:num_rows]
+    y = x0[num_rows:]
+    flag = True
+
+    f = 0
+    for i in range(num_rows):
+        f += rows_multiplicity[i] * r_dseq_rows[i] * np.log(x[i])
+        for j in range(num_cols):
+            if flag:
+                f += cols_multiplicity[j] * r_dseq_cols[j] * np.log(y[j])
+            f -= rows_multiplicity[i] * cols_multiplicity[j] * np.log(1 + x[i] * y[j])
+        flag = False
+
+    return f
+
+
+@jit(nopython=True)
+def loglikelihood_hessian_bicm(x0, args):
+    """
+    Log-likelihood hessian of the reduced BiCM.
+    
+    :param numpy.ndarray x0: 1D fitnesses vector
+    :param args: list of arguments needed for the computation
+    :type args: list, tuple
+    :returns: 2D hessian matrix of the system
+    :rtype: numpy.ndarray
+    """
+    r_dseq_rows = args[0]
+    r_dseq_cols = args[1]
+    rows_multiplicity = args[2]
+    cols_multiplicity = args[3]
+    num_rows = len(r_dseq_rows)
+    num_cols = len(r_dseq_cols)
+    x = x0[:num_rows]
+    y = x0[num_rows:]
+
+    out = np.zeros((len(x0), len(x0)))
+    x2 = x ** 2
+    y2 = y ** 2
+    flag = True
+    
+    for h in range(num_rows):
+        out[h, h] -= r_dseq_rows[h] / x2[h]
+        for i in range(num_cols):
+            if flag:
+                out[i + num_rows, i + num_rows] -= r_dseq_cols[i] / y2[i]
+            multiplier = cols_multiplicity[i] / ((1 + x[h] * y[i]) ** 2)
+            out[h, h] += y2[i] * multiplier
+            out[h, i + num_rows] = - multiplier
+            multiplier_h = rows_multiplicity[h] / ((1 + x[h] * y[i]) ** 2)
+            out[i + num_rows, i + num_rows] += x2[h] * multiplier_h
+            out[i + num_rows, h] = - multiplier_h
+        flag = False
+
+    return out
+
+
+@jit(nopython=True)
+def loglikelihood_hessian_diag_bicm(x0, args):
+    """
+    Log-likelihood diagonal hessian of the reduced BiCM.
+    
+    :param numpy.ndarray x0: 1D fitnesses vector
+    :param args: list of arguments needed for the computation
+    :type args: list, tuple
+    :returns: 2D hessian matrix of the system
+    :rtype: numpy.ndarray
+    """
+    r_dseq_rows = args[0]
+    r_dseq_cols = args[1]
+    rows_multiplicity = args[2]
+    cols_multiplicity = args[3]
+    num_rows = len(r_dseq_rows)
+    num_cols = len(r_dseq_cols)
+    x = x0[:num_rows]
+    y = x0[num_rows:]
+
+    f = np.zeros(num_rows + num_cols)
+    x2 = x ** 2
+    y2 = y ** 2
+    flag = True
+
+    for i in range(num_rows):
+        for j in range(num_cols):
+            denom = (1 + x[i] * y[j]) ** 2
+            f[i] += cols_multiplicity[j] * y2[j] / denom
+            f[j + num_rows] += rows_multiplicity[i] * x2[i] / denom
+            if flag:
+                f[j + num_rows] -= r_dseq_cols[j] / y2[j]
+        f[i] -= r_dseq_rows[i] / x2[i]
+        flag = False
+
+    return f
+
+
+@jit(nopython=True)
+def loglikelihood_prime_bicm(x0, args):
+    """
+    Iterative function for loglikelihood gradient BiCM.
+    
+    :param x0: fitnesses vector
+    :type x0: numpy.array
+    :param args: list of arguments needed for the computation
+    :type args: list
+    :returns: log-likelihood of the system
+    :rtype: numpy.array
+    """
+    r_dseq_rows = args[0]
+    r_dseq_cols = args[1]
+    rows_multiplicity = args[2]
+    cols_multiplicity = args[3]
+    num_rows = len(r_dseq_rows)
+    num_cols = len(r_dseq_cols)
+    x = x0[:num_rows]
+    y = x0[num_rows:]
+
+    f = np.zeros(len(x0))
+    flag = True
+
+    for i in range(num_rows):
+        for j in range(num_cols):
+            denom = 1 + x[i] * y[j]
+            f[i] -= y[j] * cols_multiplicity[j] / denom
+            f[j + num_rows] -= x[i] * rows_multiplicity[i] / denom
+            if flag:
+                f[j + num_rows] += r_dseq_cols[j] / y[j]
+        f[i] += r_dseq_rows[i] / x[i]
+        flag = False
+    return f
 
 
 def solver(x0, fun, stop_fun, fun_jac=None, tol=1e-8, eps=1e-3, max_steps=100, method='newton', verbose=False,
@@ -282,14 +274,14 @@ def solver(x0, fun, stop_fun, fun_jac=None, tol=1e-8, eps=1e-3, max_steps=100, m
     Find roots of eq. fun = 0, using methods *newton*, *quasi-newton* or *iterative*.
     
     :param numpy.ndarray x0: Initial conditions
-    :param fun: Function to be minimized
-    :param stop_fun: Function that is used to determine whether the solver is making progress
-    :param fun_jac: Jacobian of the system, not used for the fixed-point solver
+    :param function fun: Function to be minimized
+    :param function stop_fun: Function that is used to determine whether the solver is making progress
+    :param function fun_jac: Jacobian of the system, not used for the fixed-point solver
     :param float tol: Tolerance of the solution, optional
     :param float eps: Tolerance for the regularization of the matrix, optional
     :param int max_steps: Maximum number of steps, optional
     :param str method: Method of choice among *newton*, *quasinewton* or *iterative*, default is newton
-    :param bool, optional verbose: Print elapsed time, errors and iteration steps, optional
+    :param bool verbose: Print elapsed time, errors and iteration steps, optional
     :param bool regularise: Regularise the matrices in the computations, optional
     :param bool full_return: Return also elapsed times and errors, optional
     :param bool linsearch: Implement the linesearch when searching for roots, default is True
@@ -385,6 +377,14 @@ def solver(x0, fun, stop_fun, fun_jac=None, tol=1e-8, eps=1e-3, max_steps=100, m
         return x, toc_all, n_steps, np.array(norm_seq)
     else:
         return x
+
+
+def sufficient_decrease_condition(f_old, f_new, alpha, grad_f, p, c1=0):
+    """
+    Return boolean indicator if upper wolfe condition is respected.
+    """
+    sup = f_old + c1 * alpha * np.dot(grad_f, p.T)
+    return bool(f_new < sup)
 
 
 class BipartiteGraph():
@@ -733,9 +733,10 @@ class BipartiteGraph():
     def _check_solution(self, return_error=False, in_place=False):
         """
         Check if the solution of the BiCM is compatible with the degree sequences of the graph.
+        
         :param bool return_error: If this is set to true, return 1 if the solution is not correct, 0 otherwise.
         :param bool in_place: check also the error in the single entries of the matrices. 
-        Always False unless comparing two different solutions.
+            Always False unless comparing two different solutions.
         """
         if self.biadjacency is not None and self.avg_mat is not None:
             return check_sol(self.biadjacency, self.avg_mat, return_error=return_error, in_place=in_place)
@@ -748,6 +749,7 @@ class BipartiteGraph():
     def _set_solved_problem(self, solution):
         """
         Sets the solution of the problem.
+        
         :param numpy.ndarray solution: A numpy array containing that reduced fitnesses of the two layers, consecutively.
         """
         if self.x is None:

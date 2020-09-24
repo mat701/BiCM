@@ -25,12 +25,15 @@ Usage:
     Be x a list or numpy array of different number of successes.
     To obtain:
         - probability mass function of x, use
+        
         >>> pb.pmf(x)
         
         - cumulative density function of x, use
+        
         >>> pb.cdf(x)
         
         - p-values of x, use
+        
         >>> pb.pval(x)
         
     The functions are applied component-wise and a numpy array of the same

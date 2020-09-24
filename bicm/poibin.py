@@ -21,20 +21,23 @@ Usage:
     Be p a list / numpy array of success probabilities for n non-identically
     distributed Bernoulli random variables.
     Create an instance of the distribution with
+    
     >>> pb = PoiBin(p)
+    
     Be x a list or numpy array of different number of successes.
     To obtain:
-        - probability mass function of x, use
-        
-        >>> pb.pmf(x)
-        
-        - cumulative density function of x, use
-        
-        >>> pb.cdf(x)
-        
-        - p-values of x, use
-        
-        >>> pb.pval(x)
+    
+    - probability mass function of x, use
+
+    >>> pb.pmf(x)
+
+    - cumulative density function of x, use
+
+    >>> pb.cdf(x)
+
+    - p-values of x, use
+
+    >>> pb.pval(x)
         
     The functions are applied component-wise and a numpy array of the same
     lenth as x is returned.

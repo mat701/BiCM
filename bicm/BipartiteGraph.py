@@ -147,12 +147,17 @@ def loglikelihood_hessian_diag_bicm(x0, args):
     """
     Log-likelihood diagonal hessian of the reduced BiCM.
     
-    :param x0: fitnesses vector
-    :type x0: numpy.array
-    :param args: list of arguments needed for the computation
-    :type args: list
-    :returns: hessian diagonal of the system via a vector
-    :rtype: numpy.array
+    Parameters
+    ----------
+    arg1 : int
+        Description of arg1
+    arg2 : str
+        Description of arg2
+
+    Returns
+    -------
+    int
+        Description of return value
     """
     r_dseq_rows = args[0]
     r_dseq_cols = args[1]

@@ -5,7 +5,7 @@ This module contains several functions for bipartite networks.
 import numpy as np
 from scipy import sparse
 from numba import jit
-from .PvaluesHandler import PvaluesHandler
+from PvaluesHandler import PvaluesHandler
 
 
 def sample_bicm(avg_mat):
@@ -51,7 +51,7 @@ def edgelist_from_biadjacency(biadjacency):
     """
     if sparse.isspmatrix(biadjacency):
         coords = biadjacency.nonzero()
-        if (biadjacency.data != 1) > 0:
+        if np.sum(biadjacency.data != 1) > 0:
             raise ValueError('Only binary matrices')
         return np.array(list(zip(coords[0], coords[1])), dtype=np.dtype([('rows', int), ('columns', int)])),\
                np.array(biadjacency.sum(0))[0], np.array(biadjacency.sum(1))[0]
@@ -78,7 +78,7 @@ def biadjacency_from_edgelist(edgelist, fmt='array'):
             from scipy.sparse import coo_matrix
         except ImportError:
             raise ImportError('To use sparse matrices I need scipy.sparse')
-        biadjacency = coo_matrix((np.ones(len(edgelist)), edgelist['rows'], edgelist['columns']))
+        biadjacency = coo_matrix((np.ones(len(edgelist)), (edgelist['rows'], edgelist['columns'])))
     elif not isinstance(format, str):
         raise TypeError('format must be a string (either "array" or "sparse")')
     else:
@@ -91,7 +91,7 @@ def edgelist_from_edgelist(edgelist):
     Creates a new edgelist with the indexes of the nodes instead of the names.
     Returns also two dictionaries that keep track of the nodes.
     """
-    edgelist = np.array([list(edge) for edge in edgelist] )
+    edgelist = np.array(list(set([tuple(edge) for edge in edgelist])))
     out = np.zeros(np.shape(edgelist)[0], dtype=np.dtype([('source', object), ('target', object)]))
     out['source'] = edgelist[:, 0]
     out['target'] = edgelist[:, 1]

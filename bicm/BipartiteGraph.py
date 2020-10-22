@@ -6,7 +6,7 @@ The solver functions are located here for compatibility with the numba package.
 
 import numpy as np
 from numba import jit
-from .functions import *
+from functions import *
 import scipy.sparse
 from scipy import optimize as opt
 import time
@@ -379,7 +379,7 @@ def solver(x0, fun, stop_fun, fun_jac=None, tol=1e-8, eps=1e-3, max_steps=100, m
         return x
 
 
-def sufficient_decrease_condition(f_old, f_new, alpha, grad_f, p, c1=0):
+def sufficient_decrease_condition(f_old, f_new, alpha, grad_f, p, c1=1e-4):
     """
     Return boolean indicator if upper wolfe condition is respected.
     """

@@ -54,7 +54,7 @@ def edgelist_from_biadjacency(biadjacency):
         if np.sum(biadjacency.data != 1) > 0:
             raise ValueError('Only binary matrices')
         return np.array(list(zip(coords[0], coords[1])), dtype=np.dtype([('rows', int), ('columns', int)])),\
-               np.array(biadjacency.sum(0))[0], np.array(biadjacency.sum(1))[0]
+               np.array(biadjacency.sum(1)).flatten(), np.array(biadjacency.sum(0)).flatten()
     else:
         if np.sum(biadjacency[biadjacency != 0] != 1) > 0:
             raise ValueError('Only binary matrices')

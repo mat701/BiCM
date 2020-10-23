@@ -5,7 +5,7 @@ This module contains several functions for bipartite networks.
 import numpy as np
 from scipy import sparse
 from numba import jit
-from PvaluesHandler import PvaluesHandler
+from .PvaluesHandler import PvaluesHandler
 
 
 def sample_bicm(avg_mat):

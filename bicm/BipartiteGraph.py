@@ -6,7 +6,7 @@ The solver functions are located here for compatibility with the numba package.
 
 import numpy as np
 from numba import jit
-from functions import *
+from .functions import *
 import scipy.sparse
 from scipy import optimize as opt
 import time

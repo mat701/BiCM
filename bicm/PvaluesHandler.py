@@ -8,7 +8,7 @@ import numpy as np
 from numba import jit
 from multiprocessing import Pool
 from tqdm import tqdm_notebook
-from poibin import PoiBin
+from .poibin import PoiBin
 from scipy.stats import poisson, norm
 
 

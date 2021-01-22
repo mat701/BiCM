@@ -2,7 +2,7 @@
 # sys.path.append('../bicm/')
 # from BipartiteGraph import *
 # import bicm
-from bicm import BipartiteGraph
+from bicm import *
 import numpy as np
 
 # This test uses a plant-pollinator network from Petanidou, T. (1991). Pollination ecology in a phryganic ecosystem.

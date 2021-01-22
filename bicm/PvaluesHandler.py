@@ -34,7 +34,7 @@ def v_list_from_v_mat(v_mat):
     """
     n_rows = len(v_mat)
     v_list = []
-    for i in range(n_rows):
+    for i in range(n_rows - 1):
         for j in range(i + 1, n_rows):
             if v_mat[i, j] > 0:
                 v_list.append((i, j, v_mat[i, j]))

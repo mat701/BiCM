@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="bicm",
-    version="0.6",
+    version="0.9",
     author="Matteo Bruno",
     author_email="matteo.bruno@imtlucca.it",
     description="Package for bipartite configuration model",
@@ -18,5 +18,5 @@ setuptools.setup(
         "License :: OSI Approved :: MIT License",
         "Operating System :: OS Independent",
     ],
-    python_requires='>=2.7',
+    python_requires='>=3.5',
 )

@@ -107,6 +107,76 @@ def edgelist_from_edgelist(edgelist):
     return edgelist_new, rows_degs, cols_degs, rows_dict, cols_dict
 
 
+def adjacency_list_from_edgelist(edgelist, convert_type=True):
+    """
+    Creates the adjacency list from the edgelist.
+    Returns two dictionaries, each containing an adjacency list with the rows as keys and the columns as keys, respectively.
+    If convert_type is True (default), then the nodes are enumerated and the adjacency list is returned as integers.
+    Returns also two dictionaries that keep track of the nodes and the two degree sequences.
+    """
+    if convert_type:
+        edgelist, rows_degs, cols_degs, rows_dict, cols_dict = edgelist_from_edgelist(edgelist)
+    adj_list = {}
+    inv_adj_list = {}
+    for edge in edgelist:
+        adj_list.setdefault(edge[0], set()).add(edge[1])
+        inv_adj_list.setdefault(edge[1], set()).add(edge[0])
+    if not convert_type:
+        rows_degs = np.array([len(adj_list[k]) for k in adj_list])
+        rows_dict = {k: k for k in adj_list}
+        cols_degs = np.array([len(inv_adj_list[k]) for k in inv_adj_list])
+        cols_dict = {k: k for k in inv_adj_list}
+    return adj_list, inv_adj_list, rows_degs, cols_degs, rows_dict, cols_dict
+
+
+def adjacency_list_from_adjacency_list(old_adj_list):
+    """
+    Creates the adjacency list from another adjacency list, convering the data type.
+    Returns two dictionaries, each containing an adjacency list with the rows as keys and the columns as keys, respectively.
+    Original keys are treated as rows, values as columns.
+    The nodes are enumerated and the adjacency list is returned as integers.
+    Returns also two dictionaries that keep track of the nodes and the two degree sequences.
+    """
+    rows_dict = dict(enumerate(np.unique(list(old_adj_list.keys()))))
+    cols_dict = dict(enumerate(np.unique([el for l in old_adj_list.values() for el in l])))
+    inv_rows_dict = {v: k for k, v in rows_dict.items()}
+    inv_cols_dict = {v: k for k, v in cols_dict.items()}
+    adj_list = {}
+    inv_adj_list = {}
+    for k in old_adj_list:
+        adj_list.setdefault(inv_rows_dict[k], set()).update({inv_cols_dict[val] for val in old_adj_list[k]})
+        for val in old_adj_list[k]:
+            inv_adj_list.setdefault(inv_cols_dict[val], set()).add(inv_rows_dict[k])
+    rows_degs = np.array([len(adj_list[k]) for k in adj_list])
+    cols_degs = np.array([len(inv_adj_list[k]) for k in inv_adj_list])
+    return adj_list, inv_adj_list, rows_degs, cols_degs, rows_dict, cols_dict
+
+
+def adjacency_list_from_biadjacency(biadjacency):
+    """
+    Creates the adjacency list from a biadjacency matrix, given in sparse format or as a list or numpy array.
+    Returns two dictionaries, each containing an adjacency list with the rows as keys and the columns as keys, respectively.
+    Returns also the two degree sequences.
+    """
+    if sparse.isspmatrix(biadjacency):
+        if np.sum(biadjacency.data != 1) > 0:
+            raise ValueError('Only binary matrices')
+        coords = biadjacency.nonzero()
+    else:
+        biadjacency = np.array(biadjacency)
+        if np.sum(biadjacency[biadjacency != 0] != 1) > 0:
+            raise ValueError('Only binary matrices')
+        coords = np.where(biadjacency != 0)
+    adj_list = {}
+    inv_adj_list = {}
+    for edge_i in range(len(coords[0])):
+        adj_list.setdefault(coords[0][edge_i], set()).add(coords[1][edge_i])
+        inv_adj_list.setdefault(coords[1][edge_i], set()).add(coords[0][edge_i])
+    rows_degs = np.array([len(adj_list[k]) for k in adj_list])
+    cols_degs = np.array([len(inv_adj_list[k]) for k in inv_adj_list])
+    return adj_list, inv_adj_list, rows_degs, cols_degs
+
+
 def check_sol(biad_mat, avg_bicm, return_error=False, in_place=False):
     """
     This function prints the rows sums differences between two matrices, that originally are the biadjacency matrix and its bicm average matrix.
@@ -118,13 +188,16 @@ def check_sol(biad_mat, avg_bicm, return_error=False, in_place=False):
     The intended use of this is to check if two solutions are the same solution.
     """
     error = 0
-    if (avg_bicm < 0).sum() != 0:
-        print('NEGATIVE ENTRIES IN THE AVERAGE MATRIX!')
+    if np.any(avg_bicm < 0):
+        print('Negative probabilities in the average matrix! This means negative node fitnesses.')
         error = 1
-    rows_error_vec = np.abs(np.sum(biad_mat, axis=0) - np.sum(avg_bicm, axis=0))
+    if np.any(avg_bicm > 1):
+        print('Probabilities greater than 1 in the average matrix! This means negative node fitnesses.')
+        error = 1
+    rows_error_vec = np.abs(np.sum(biad_mat, axis=1) - np.sum(avg_bicm, axis=1))
     err_rows = np.max(rows_error_vec)
     print('max rows error =', err_rows)
-    cols_error_vec = np.abs(np.sum(biad_mat, axis=1) - np.sum(avg_bicm, axis=1))
+    cols_error_vec = np.abs(np.sum(biad_mat, axis=0) - np.sum(avg_bicm, axis=0))
     err_cols = np.max(cols_error_vec)
     print('max columns error =', err_cols)
     tot_err = np.sum(rows_error_vec) + np.sum(cols_error_vec)
@@ -154,7 +227,18 @@ def check_sol_light(x, y, rows_deg, cols_deg, return_error=False):
     Light version of the check_sol function, working only on the fitnesses and the degree sequences.
     """
     error = 0
-    rows_error_vec = np.abs([(x[i] * y / (1 + x[i] * y)).sum() - rows_deg[i] for i in range(len(x))])
+    rows_error_vec = []
+    for i in range(len(x)):
+        row_avgs = x[i] * y / (1 + x[i] * y)
+        if error == 0:
+            if np.any(row_avgs < 0):
+                print('Warning: negative link probabilities')
+                error = 1
+            if np.any(row_avgs > 1):
+                print('Warning: link probabilities > 1')
+                error = 1
+        rows_error_vec.append(np.sum(row_avgs) - rows_deg[i])
+    rows_error_vec = np.abs(rows_error_vec)
     err_rows = np.max(rows_error_vec)
     print('max rows error =', err_rows)
     cols_error_vec = np.abs([(x * y[j] / (1 + x * y[j])).sum() - cols_deg[j] for j in range(len(y))])
@@ -199,6 +283,25 @@ def vmotifs_from_edgelist(edgelist, rows_num, rows_deg):
     return v_list
 
 
+def vmotifs_from_adjacency_list(adj_list):
+    """
+    From the adjacency list returns an edgelist of the keys with the couples of nodes that share at least a common neighbor (v-motif),
+    weighted by the couples' v-motifs number.
+    adj_list values must be sets.
+    """
+    nodelist = list(adj_list.keys())
+    nodes_num = len(nodelist)
+    v_list = []
+    for node_i in range(nodes_num - 1):
+        first_node = nodelist[node_i]
+        for node_j in range(node_i + 1, nodes_num):
+            second_node = nodelist[node_j]
+            v_num = len(adj_list[first_node] & adj_list[second_node])
+            if v_num > 0:
+                v_list.append((first_node, second_node, v_num))
+    return v_list
+
+
 def pvals_validator(pvals, rows_num, alpha=0.05):
     """
     Validate p-values given a threshold alpha.
@@ -236,11 +339,10 @@ def projection_calculator(biad_mat, avg_mat, alpha=0.05, rows=True, sparse_mode=
     pval_obj = PvaluesHandler()
     pval_obj.set_avg_mat(avg_mat)
     pval_obj.compute_pvals(v_mat, method=method, threads_num=threads_num, progress_bar=progress_bar)
-    pval_list = np.array(pval_obj.pval_list, dtype=np.dtype([('source', int), ('target', int), ('pval', float)]))
+    pval_list = pval_obj.pval_list
     if return_pvals:
-        return np.array([(pval[0], pval[1], pval[2]) for pval in pval_list],
-                        dtype=np.dtype([('source', int), ('target', int), ('pval', float)]))
-    eff_fdr_th = pvals_validator(pval_list['pval'], rows_num, alpha=alpha)
+        return pval_list
+    eff_fdr_th = pvals_validator([v[2] for v in pval_list], rows_num, alpha=alpha)
     return np.array([(v[0], v[1]) for v in pval_list if v[2] <= eff_fdr_th])
 
 
@@ -252,8 +354,7 @@ def projection_calculator_light(edgelist, x, y, alpha=0.05, rows=True, method='p
     distribution, 'normal' for the normal approximation and 'rna' for the refined normal approximation.
     """
     if not rows:
-        edgelist = np.array([(edge[1], edge[0]) for edge in edgelist], dtype=np.dtype([('rows', np.int64), ('columns', np.int64)]))
-    node_type = type(edgelist[0][0])
+        edgelist = np.array([(edge[1], edge[0]) for edge in edgelist], dtype=np.dtype([('rows', object), ('columns', object)]))
     edgelist, order = np.unique(edgelist, axis=0, return_index=True)
     edgelist = edgelist[np.argsort(order)]  # np.unique does not preserve the order
     edgelist, rows_degs, cols_degs, rows_dict, cols_dict = edgelist_from_edgelist(edgelist)
@@ -265,9 +366,34 @@ def projection_calculator_light(edgelist, x, y, alpha=0.05, rows=True, method='p
     else:
         pval_obj.set_fitnesses(y, x)
     pval_obj.compute_pvals(v_list, method=method, threads_num=threads_num, progress_bar=progress_bar)
-    pval_list = np.array(pval_obj.pval_list, dtype=np.dtype([('source', int), ('target', int), ('pval', float)]))
+    pval_list = pval_obj.pval_list
     if return_pvals:
-        return np.array([(rows_dict[pval[0]], rows_dict[pval[1]], pval[2]) for pval in pval_list],
-                        dtype=np.dtype([('source', node_type), ('target', node_type), ('pval', float)]))
-    eff_fdr_th = pvals_validator(pval_list['pval'], rows_num, alpha=alpha)
+        return [(rows_dict[pval[0]], rows_dict[pval[1]], pval[2]) for pval in pval_list]
+    eff_fdr_th = pvals_validator([v[2] for v in pval_list], rows_num, alpha=alpha)
     return np.array([(rows_dict[v[0]], rows_dict[v[1]]) for v in pval_list if v[2] <= eff_fdr_th])
+
+
+def projection_calculator_light_from_adjacency(adj_list, x, y, alpha=0.05, method='poisson', threads_num=4, return_pvals=False, progress_bar=True, change_dtype=False):
+    """
+    Calculate the projection given only the adjacency list of the network and its inverse, the fitnesses of the rows layer and the fitnesses of the columns layer.
+    The projection is calculated on the layer of the nodes given as keys.
+    By default, the projection is calculated using a Poisson approximation. Other implemented choices are 'poibin' for the original Poisson-binomial
+    distribution, 'normal' for the normal approximation and 'rna' for the refined normal approximation.
+    """
+    adj_list, inv_adj_list, rows_degs, cols_degs, rows_dict, cols_dict = adjacency_list_from_adjacency_list(adj_list)
+    rows_num = len(rows_degs)
+    v_list = vmotifs_from_adjacency_list(adj_list)
+    pval_obj = PvaluesHandler()
+    pval_obj.set_fitnesses(x, y)
+    pval_obj.compute_pvals(v_list, method=method, threads_num=threads_num, progress_bar=progress_bar)
+    pval_list = pval_obj.pval_list
+    if return_pvals:
+        if change_dtype:
+            return [(rows_dict[pval[0]], rows_dict[pval[1]], pval[2]) for pval in pval_list]
+        else:
+            return pval_list
+    eff_fdr_th = pvals_validator([v[2] for v in pval_list], rows_num, alpha=alpha)
+    if change_dtype:
+        return np.array([(rows_dict[v[0]], rows_dict[v[1]]) for v in pval_list if v[2] <= eff_fdr_th])
+    else:
+        return np.array([(v[0], v[1]) for v in pval_list if v[2] <= eff_fdr_th])

@@ -1,7 +1,7 @@
 BiCM documentation
 =====================================
 
-This package provides a tool for calculating the Bipartite Configuration Model (BiCM), as introduced in https://www.nature.com/articles/srep10595?origin=ppub , and the relative monopartite projection on one layer introduced in https://iopscience.iop.org/article/10.1088/1367-2630/aa6b38/meta . 
+This package provides a tool for calculating the Bipartite Configuration Model (BiCM), as introduced in `Randomizing bipartite networks: the case of the World Trade Web. Saracco et al., Sci Rep 5, 10595 (2015). <https://doi.org/10.1038/srep10595>`_ , and the relative monopartite projection on one layer introduced in `Inferring monopartite projections of bipartite networks: an entropy-based approach, Saracco et al., 2017 New J. Phys. 19 053022 <https://doi.org/10.1088/1367-2630/aa6b38>`_ . 
 
 Basic functionalities
 =====================================
@@ -25,17 +25,18 @@ To generate a Graph object and initialize it (with a biadjacency matrix, edgelis
     from bicm import BipartiteGraph
     myGraph = BipartiteGraph()
     myGraph.set_biadjacency_matrix(my_biadjacency_matrix)
+    myGraph.set_adjacency_list(my_adjacency_list)
     myGraph.set_edgelist(my_edgelist)
     myGraph.set_degree_sequences((first_degree_sequence, second_degree_sequence))
 
-Or alternatively:
+Or alternatively, with the respective data structure as input:
 
 .. code-block:: python
     
     from bicm import BipartiteGraph
-    myGraph = BipartiteGraph(biadjacency=my_biadjacency_matrix, edgelist=my_edgelist, degree_sequences=((first_degree_sequence, second_degree_sequence)))
+    myGraph = BipartiteGraph(biadjacency=my_biadjacency_matrix, adjacency_list=my_adjacency_list, edgelist=my_edgelist, degree_sequences=((first_degree_sequence, second_degree_sequence)))
 
-To compute the BiCM probability matrix of the graph or the relative fitnesses coefficients:
+To compute the BiCM probability matrix of the graph or the relative fitnesses coefficients as dictionaries containing the nodes names as keys:
 
 .. code-block:: python
     
@@ -47,14 +48,14 @@ To customize the solver you can alternatively use (in advance) the following met
 
 .. code-block:: python
     
-    myGraph.solve_bicm(light_mode=False, method='newton', initial_guess=None, tolerance=1e-8, max_steps=None, verbose=False, linsearch=True, regularise=False, print_error=True)
+    myGraph.solve_bicm(light_mode=False, method='newton', initial_guess=None, tolerance=1e-8, max_steps=None, verbose=False, linsearch=True, regularise=False, print_error=True, exp=False)
 
 To get the rows or columns projection of the graph:
 
 .. code-block:: python
     
     myGraph.get_rows_projection()
-    myGraph.get_rows_projection()
+    myGraph.get_cols_projection()
 
 Alternatively, to customize the projection:
 

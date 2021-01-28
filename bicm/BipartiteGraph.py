@@ -436,7 +436,8 @@ def solver(x0, fun, stop_fun, fun_jac, hessian_regulariser, tol=1e-10, eps=1e-16
             print('fun = {}'.format(f_x))
             print('dx = {}'.format(dx))
             print('x = {}'.format(x))
-            print('B(x) = {}'.format(B))
+            if method != 'fixed-point':
+                print('B(x) = {}'.format(B))
             print('|f(x)| = {}'.format(norm))
     toc_loop = time.time() - tic_loop
     toc_all = time.time() - tic_all
@@ -968,7 +969,7 @@ class BipartiteGraph:
         else:
             self.max_steps = max_steps
 
-    def solve_bicm(self, light_mode=None, method='newton', initial_guess=None, tolerance=1e-10, max_steps=None,
+    def solve_bicm(self, light_mode=None, method='newton', initial_guess=None, tolerance=1e-8, max_steps=None,
                    verbose=False, linsearch=True, regularise=None, print_error=True, exp=False):
         """Solve the BiCM of the graph.
         It does not return the solution, use the getter methods instead.
@@ -991,11 +992,11 @@ class BipartiteGraph:
             return
         if regularise is None:
             if exp:
-                regularise = True
-            else:
                 regularise = False
-        if regularise and not exp:
-            print('Warning: regularise is only recommended in exp mode.')
+            else:
+                regularise = True
+        if regularise and exp:
+            print('Warning: regularise is only recommended in non-exp mode.')
         if method == 'root':
             exp = True
         self._set_parameters(method=method, initial_guess=initial_guess, tolerance=tolerance,

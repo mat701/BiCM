@@ -16,5 +16,5 @@ Author: Matteo Bruno
 from .functions import *
 from .BipartiteGraph import *
 
-__version__ = "1.0"
+__version__ = "1.1"
 __author__ = """Matteo Bruno (matteo.bruno@imtlucca.it)"""

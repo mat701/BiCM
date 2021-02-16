@@ -13,8 +13,8 @@ Github repository::
 Author: Matteo Bruno
 """
 
-from .functions import *
-from .BipartiteGraph import *
+from .network_functions import *
+from .graph_classes import *
 
-__version__ = "1.1"
+__version__ = "2.0"
 __author__ = """Matteo Bruno (matteo.bruno@imtlucca.it)"""

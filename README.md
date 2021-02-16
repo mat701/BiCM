@@ -42,7 +42,7 @@ To compute the BiCM probability matrix of the graph or the relative fitnesses co
 This will solve the bicm using recommended settings for the solver. 
 To customize the solver you can alternatively use (in advance) the following method:
     
-    myGraph.solve_bicm(light_mode=False, method='newton', initial_guess=None, tolerance=1e-8, max_steps=None, verbose=False, linsearch=True, regularise=False, print_error=True, exp=False)
+    myGraph.solve_tool(light_mode=False, method='newton', initial_guess=None, tolerance=1e-8, max_steps=None, verbose=False, linsearch=True, regularise=False, print_error=True, exp=False)
 
 To get the rows or columns projection of the graph:
 
@@ -62,6 +62,8 @@ If you use the `bicm` module, please cite its location on Github
 original articles \[Saracco2015\] and \[Saracco2017\].
 
 ### References
+
+\[Vallarano2021] [N. Vallarano, M. Bruno, E. Marchese, G. Trapani, F. Saracco, T. Squartini, G. Cimini, M. Zanon, Fast and scalable likelihood maximization for Exponential Random Graph Models, Preprint](https://arxiv.org/abs/2101.12625)
 
 \[Saracco2015\] [F. Saracco, R. Di Clemente, A. Gabrielli, T. Squartini, Randomizing bipartite networks: the case of the World Trade Web, Scientific Reports 5, 10595 (2015)](http://www.nature.com/articles/srep10595).
 

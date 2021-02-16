@@ -4,7 +4,7 @@ FAQ
 Does the package work with monopartite networks?
 ---------------------------------------------------------------------------------------
 
-No, it doesn't. Maybe you are looking for a different configuration model? For a complete guide of maximum entropy configuration models, see meh.imtlucca.it .
+No, it doesn't. But you are looking for the `NEMtropy package<https://github.com/nicoloval/NEMtropy>`!, see meh.imtlucca.it .
 
 Does the package work with weighted networks?
 ---------------------------------------------------------------------------------------

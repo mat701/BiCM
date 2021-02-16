@@ -4,16 +4,7 @@ API
 BipartiteGraph class
 ----------------------------------
 
-.. automodule:: bicm.BipartiteGraph
-    :members:
-    :undoc-members:
-    :show-inheritance:
-    :private-members:
-
-PvaluesHandler class
-----------------------------------
-
-.. automodule:: bicm.PvaluesHandler
+.. automodule:: bicm.graph_classes
     :members:
     :undoc-members:
     :show-inheritance:
@@ -28,10 +19,28 @@ poibin class
     :show-inheritance:
     :private-members:
 
-functions module
+Network functions
 ----------------------------------
 
-.. automodule:: bicm.functions
+.. automodule:: bicm.networks_functions
+    :members:
+    :undoc-members:
+    :show-inheritance:
+    :private-members:
+
+Solver functions
+----------------------------------
+
+.. automodule:: bicm.solver_functions
+    :members:
+    :undoc-members:
+    :show-inheritance:
+    :private-members:
+
+Models functions
+----------------------------------
+
+.. automodule:: bicm.models_functions
     :members:
     :undoc-members:
     :show-inheritance:

@@ -38,11 +38,11 @@ After you have created the BipartiteGraph object, you can compute the bicm of yo
 
 .. code-block:: python
     
-    myGraph.solve_bicm(light_mode=False, method='newton', initial_guess=None, tolerance=1e-8, max_steps=None, verbose=False, linsearch=True, regularise=False, print_error=True)
+    myGraph.solve_tool(light_mode=False, method='newton', initial_guess=None, tolerance=1e-8, max_steps=None, verbose=False, linsearch=True, regularise=False, print_error=True)
     myGraph.get_bicm_fitnesses()
     myGraph.get_bicm_matrix()
 
-The method "solve_bicm" will actually solve the equations and you can customize the solver with many options. The allowed methods are 'newton', 'fixed-point', 'quasinewton', 'root' and they are all performing similarly with the exception of 'root' that uses the scipy.optimize.root solver and is a bit slower. The default choice is the Newton solver.
+The method "solve_tool" will actually solve the equations and you can customize the solver with many options. The allowed methods are 'newton', 'fixed-point', 'quasinewton', 'root' and they are all performing similarly with the exception of 'root' that uses the scipy.optimize.root solver and is a bit slower. The default choice is the Newton solver.
 If you use one of the get methods before solving the bicm, the solver will start with default options.
 
 Computing the projected networks

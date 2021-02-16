@@ -22,7 +22,7 @@ poibin class
 Network functions
 ----------------------------------
 
-.. automodule:: bicm.networks_functions
+.. automodule:: bicm.network_functions
     :members:
     :undoc-members:
     :show-inheritance:

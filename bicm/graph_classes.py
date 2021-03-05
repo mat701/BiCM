@@ -1094,8 +1094,7 @@ class BipartiteGraph:
         :type threads_num: int, optional
         :param bool progress_bar: Show the progress bar
         :param str fmt: the desired format for the output
-        :returns: adjacency list of the projected network on the columns layer
-        :rtype: dict
+        :returns: the projected network on the columns layer, in the format specified by fmt
         """
         if not self.is_cols_projected:
             self.compute_projection(rows=False,

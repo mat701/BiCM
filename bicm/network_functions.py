@@ -159,11 +159,11 @@ def adjacency_list_from_edgelist_bipartite(edgelist, convert_type=True):
 
 def adjacency_list_from_adjacency_list_bipartite(old_adj_list):
     """
-    Creates the adjacency list from another adjacency list, convering the data type.
+    Creates the adjacency list from another adjacency list, converting the data type to integers.
     Method for bipartite networks.
-    Returns two dictionaries, each containing an adjacency list with the rows as keys and the columns as keys, respectively.
+    Returns two dictionaries, each representing an adjacency list with the rows or columns as keys, respectively.
     Original keys are treated as rows, values as columns.
-    The nodes are enumerated and the adjacency list is returned as integers.
+    The nodes are enumerated and the adjacency list contains the related integers.
     Returns also two dictionaries that keep track of the nodes and the two degree sequences.
     """
     rows_dict = dict(enumerate(np.unique(list(old_adj_list.keys()))))
@@ -181,11 +181,12 @@ def adjacency_list_from_adjacency_list_bipartite(old_adj_list):
     return adj_list, inv_adj_list, rows_degs, cols_degs, rows_dict, cols_dict
 
 
-def adjacency_list_from_biadjacency(biadjacency):
+def adjacency_list_from_biadjacency(biadjacency, return_inverse=True, return_degree_sequences=True):
     """
     Creates the adjacency list from a biadjacency matrix, given in sparse format or as a list or numpy array.
-    Returns two dictionaries, each containing an adjacency list with the rows as keys and the columns as keys, respectively.
-    Returns also the two degree sequences.
+    Returns the adjacency list as a dictionary, with the rows as keys and as values lists with indexes of the columns.
+    If return_inverse is True, the inverse adjacency list is also returned.
+    If return_degree_sequences is True, the two degree sequences are also returned.
     """
     if scipy.sparse.isspmatrix(biadjacency):
         if np.sum(biadjacency.data != 1) > 0:
@@ -201,6 +202,47 @@ def adjacency_list_from_biadjacency(biadjacency):
     for edge_i in range(len(coords[0])):
         adj_list.setdefault(coords[0][edge_i], set()).add(coords[1][edge_i])
         inv_adj_list.setdefault(coords[1][edge_i], set()).add(coords[0][edge_i])
-    rows_degs = np.array([len(adj_list[k]) for k in adj_list])
-    cols_degs = np.array([len(inv_adj_list[k]) for k in inv_adj_list])
-    return adj_list, inv_adj_list, rows_degs, cols_degs
+    return_args = [adj_list]
+    if return_inverse:
+        return_args.append(inv_adj_list)
+    if return_degree_sequences:
+        rows_degs = np.array([len(adj_list[k]) for k in adj_list])
+        cols_degs = np.array([len(inv_adj_list[k]) for k in inv_adj_list])
+        return_args.append(rows_degs)
+        return_args.append(cols_degs)
+    if len(return_args) > 1:
+        return tuple(return_args)
+    else:
+        return adj_list
+
+
+def edgelist_from_adjacency_list_bipartite(adj_list):
+    """
+    Creates the edgelist from an adjacency list given as a dictionary.
+    Returns the edgelist as a numpy array, with the keys as first elements of the couples and the values second.
+    :param dict adj_list: the adjacency list to be converted.
+    """
+    edgelist = []
+    for k in adj_list:
+        for k_neighbor in adj_list[k]:
+            edgelist.append((k, k_neighbor))
+    return np.array(edgelist)
+
+
+def biadjacency_from_adjacency_list(adj_list, fmt='array'):
+    """
+    Creates the biadjacency matrix from an adjacency list given as a dictionary.
+    Returns the biadjacency as a numpy array by default, or sparse scipy matrix if fmt='sparse'.
+    The biadjacency comes with the keys as rows of the matrix and the values as columns.
+    :param dict adj_list: the adjacency list to be converted. Must contain integers that will be used as indexes.
+    :param str fmt: the desired format of the output biadjacency matrix, either 'array' or 'sparse', optional
+    """
+    assert np.isin(fmt, ['array', 'sparse']), 'fmt must be either array or sparse'
+    assert isinstance(list(adj_list.keys())[0], (int, float, complex)), 'Adjacency list must be numeric'
+    rows_index = [k for k, v in adj_list.items() for _ in range(len(v))]
+    cols_index = [i for ids in adj_list.values() for i in ids]
+    biad_mat = scipy.sparse.csr_matrix(([1] * len(rows_index), (rows_index, cols_index)))
+    if fmt == 'sparse':
+        return biad_mat
+    else:
+        return biad_mat.toarray()

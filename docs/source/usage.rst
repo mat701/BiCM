@@ -50,12 +50,14 @@ Computing the projected networks
 
 To compute the projection of a bipartite network on one layer (rows or columns layer), the BiCM package uses the probabilities of the model to understand if two nodes behave similarly and should be connected in the projection. This makes sure that two nodes with high degrees are not automatically linked because they share a number of common neighbors, but will first discount the information about the degrees. See https://iopscience.iop.org/article/10.1088/1367-2630/aa6b38/meta for the details of this projection method.
 
-To compute the edgelist of the projected network, use one of the following:
+To compute the projected network and get the edgelist or the adjacency list, use one of the following:
 
 .. code-block:: python
     
     myGraph.compute_projection(rows=True, alpha=0.05, method='poisson', threads_num=4, progress_bar=True)
-    myGraph.get_rows_projection()
-    myGraph.get_cols_projection()
+    myGraph.get_rows_projection(fmt='edgelist')
+    myGraph.get_cols_projection(fmt='adjacency_list')
 
-As before, the first method is the customizable one, while the other two methods calculate the projection with default options if it has not been computed yet. The method option sets the approximation of the Poisson Binomial variable that is the number of common neighbors between nodes. Allowed options are 'poisson' (default and reliable), 'poibin' (exact but very slow, to be avoided except for small networks), 'normal' and 'rna' (to be used only in specific cases, otherwise avoid).
+You can also request the formats 'array' or 'sparse' that yield an adjacency matrix as a numpy array or scipy sparse matrix.
+
+The first method is the customizable one, while the other two methods calculate the projection with default options if it has not been computed yet. The method option sets the approximation of the Poisson Binomial variable that is the number of common neighbors between nodes. Allowed options are 'poisson' (default and reliable), 'poibin' (exact but very slow, to be avoided except for small networks), 'normal' and 'rna' (to be used only in specific cases, otherwise avoid).

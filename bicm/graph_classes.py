@@ -243,9 +243,8 @@ class BipartiteGraph:
         """
         Internal method to set the initial point of the solver.
         """
-        if self.initial_guess is None:
-            self.r_x = self.r_rows_deg / (
-                np.sqrt(self.r_n_edges))  # This +1 increases the stability of the solutions.
+        if self.initial_guess is None: # Chung-Lu approximation
+            self.r_x = self.r_rows_deg / (np.sqrt(self.r_n_edges))
             self.r_y = self.r_cols_deg / (np.sqrt(self.r_n_edges))
         elif self.initial_guess == 'random':
             self.r_x = np.random.rand(self.r_n_rows).astype(np.float64)
@@ -465,7 +464,7 @@ class BipartiteGraph:
     def check_sol(biad_mat, avg_bicm, return_error=False, in_place=False):
         """
         Static method.
-        This function prints the rows sums differences between two matrices, that originally are the biadjacency matrix and its bicm2 average matrix.
+        This function prints the rows sums differences between two matrices, that originally are the biadjacency matrix and its bicm average matrix.
         The intended use of this is to check if an average matrix is actually a solution for a bipartite configuration model.
 
         If return_error is set to True, it returns 1 if the sum of the differences is bigger than 1.
@@ -817,6 +816,10 @@ class BipartiteGraph:
             self.solve_tool()
         return self.dict_x, self.dict_y
 
+    def get_fitnesses(self):
+        """See get_bicm_fitnesses."""
+        self.get_bicm_fitnesses()
+
     def pval_calculator(self, v_list_key, x, y):
         """
         Calculate the p-values of the v-motifs numbers of one vertices and all its neighbours.
@@ -1059,10 +1062,10 @@ class BipartiteGraph:
             self.compute_projection(rows=True, alpha=alpha, method=method, threads_num=threads_num,
                                     progress_bar=progress_bar)
 
-        if fmt == 'biadjacency':
-            return nef.biadjacency_from_adjacency_list(self.projected_rows_adj_list, fmt='array')
+        if fmt == 'matrix':
+            return nef.adjacency_matrix_from_adjacency_list(self.projected_rows_adj_list, fmt='array')
         elif fmt == 'sparse':
-            return nef.biadjacency_from_adjacency_list(self.projected_rows_adj_list, fmt='sparse')
+            return nef.adjacency_matrix_from_adjacency_list(self.projected_rows_adj_list, fmt='sparse')
         if self.rows_dict is None:
             adj_list_to_return = self.projected_rows_adj_list
         else:

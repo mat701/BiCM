@@ -10,7 +10,7 @@ from numba import jit
 @jit(nopython=True)
 def bicm_from_fitnesses(x, y):
     """
-    Rebuilds the average probability matrix of the bicm2 from the fitnesses
+    Rebuilds the average probability matrix of the bicm from the fitnesses
 
     :param x: the fitness vector of the rows layer
     :type x: numpy.ndarray
@@ -176,8 +176,8 @@ def adjacency_list_from_adjacency_list_bipartite(old_adj_list):
         adj_list.setdefault(inv_rows_dict[k], set()).update({inv_cols_dict[val] for val in old_adj_list[k]})
         for val in old_adj_list[k]:
             inv_adj_list.setdefault(inv_cols_dict[val], set()).add(inv_rows_dict[k])
-    rows_degs = np.array([len(adj_list[k]) for k in adj_list])
-    cols_degs = np.array([len(inv_adj_list[k]) for k in inv_adj_list])
+    rows_degs = np.array([len(adj_list[k]) for k in range(len(adj_list))])
+    cols_degs = np.array([len(inv_adj_list[k]) for k in range(len(inv_adj_list))])
     return adj_list, inv_adj_list, rows_degs, cols_degs, rows_dict, cols_dict
 
 
@@ -206,8 +206,8 @@ def adjacency_list_from_biadjacency(biadjacency, return_inverse=True, return_deg
     if return_inverse:
         return_args.append(inv_adj_list)
     if return_degree_sequences:
-        rows_degs = np.array([len(adj_list[k]) for k in adj_list])
-        cols_degs = np.array([len(inv_adj_list[k]) for k in inv_adj_list])
+        rows_degs = np.array([len(adj_list[k]) for k in range(len(adj_list))])
+        cols_degs = np.array([len(inv_adj_list[k]) for k in range(len(inv_adj_list))])
         return_args.append(rows_degs)
         return_args.append(cols_degs)
     if len(return_args) > 1:
@@ -242,6 +242,25 @@ def biadjacency_from_adjacency_list(adj_list, fmt='array'):
     rows_index = [k for k, v in adj_list.items() for _ in range(len(v))]
     cols_index = [i for ids in adj_list.values() for i in ids]
     biad_mat = scipy.sparse.csr_matrix(([1] * len(rows_index), (rows_index, cols_index)))
+    if fmt == 'sparse':
+        return biad_mat
+    else:
+        return biad_mat.toarray()
+
+
+def adjacency_matrix_from_adjacency_list(adj_list, fmt='array'):
+    """
+    Creates the adjacency matrix from an adjacency list given as a dictionary.
+    Returns the adjacency as a numpy array by default, or sparse scipy matrix if fmt='sparse'.
+    :param dict adj_list: the adjacency list to be converted. Must contain integers that will be used as indexes.
+    :param str fmt: the desired format of the output adjacency matrix, either 'array' or 'sparse', optional
+    """
+    assert np.isin(fmt, ['array', 'sparse']), 'fmt must be either array or sparse'
+    assert isinstance(list(adj_list.keys())[0], (int, float, complex)), 'Adjacency list must be numeric'
+    rows_index = [k for k, v in adj_list.items() for _ in range(len(v))]
+    cols_index = [i for ids in adj_list.values() for i in ids]
+    biad_mat = scipy.sparse.csr_matrix(([1] * len(rows_index), (rows_index, cols_index)))
+    biad_mat = biad_mat + biad_mat.T
     if fmt == 'sparse':
         return biad_mat
     else:

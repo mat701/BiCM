@@ -79,7 +79,7 @@ class BipartiteGraph:
         self.y = None
         self.r_x = None
         self.r_y = None
-        self.r_xy = None
+        self.solution_array = None
         self.dict_x = None
         self.dict_y = None
         self.theta_x = None
@@ -120,6 +120,8 @@ class BipartiteGraph:
         self.full_rows_num = None
         self.full_rows_num = None
         self.solution_converged = None
+        self.loglikelihood = None
+        self.progress_bar = None
 
     def _initialize_graph(self, biadjacency=None, adjacency_list=None, edgelist=None, degree_sequences=None):
         """
@@ -575,15 +577,15 @@ class BipartiteGraph:
             self.r_theta_xy = solution
             self.r_theta_x = self.r_theta_xy[:self.r_n_rows]
             self.r_theta_y = self.r_theta_xy[self.r_n_rows:]
-            self.r_xy = np.exp(- self.r_theta_xy)
+            self.solution_array = np.exp(- self.r_theta_xy)
             self.r_x = np.exp(- self.r_theta_x)
             self.r_y = np.exp(- self.r_theta_y)
             self.theta_x[self.nonfixed_rows] = self.r_theta_x[self.r_invert_rows_deg]
             self.theta_y[self.nonfixed_cols] = self.r_theta_y[self.r_invert_cols_deg]
         else:
-            self.r_xy = solution
-            self.r_x = self.r_xy[:self.r_n_rows]
-            self.r_y = self.r_xy[self.r_n_rows:]
+            self.solution_array = solution
+            self.r_x = self.solution_array[:self.r_n_rows]
+            self.r_y = self.solution_array[self.r_n_rows:]
         if self.x is None:
             self.x = np.zeros(self.n_rows)
         if self.y is None:
@@ -598,6 +600,8 @@ class BipartiteGraph:
             self.norm_seq = solution[3]
             self.diff_seq = solution[4]
             self.alfa_seq = solution[5]
+        if self.method != 'root':
+            self.loglikelihood = self.step_fun(self.solution_array)
         # Reset solver lambda functions for multiprocessing compatibility
         self.hessian_regulariser = None
         self.fun = None
@@ -1173,3 +1177,8 @@ class BipartiteGraph:
         self.rows_deg = None
         self.cols_deg = None
         self.is_initialized = False
+
+    def model_loglikelihood(self):
+        """Returns the loglikelihood of the solution of last model executed.
+        """
+        return self.loglikelihood

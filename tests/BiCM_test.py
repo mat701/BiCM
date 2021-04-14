@@ -93,11 +93,14 @@ rows_projection = myGraph.get_rows_projection()
 print(rows_projection)
 
 # If you don't want to get the progress_bar you can set progress_bar=False. If you want to re-compute the projection with different settings, use compute_projection()
-print('If you don\'t want to get the progress_bar you can set progress_bar=False. If you want to re-compute the projection with different settings, use compute_projection()')
+print('If you don\'t want to get the progress_bar you can set progress_bar=False. If you want to re-compute the projection with different settings (here a lower validation threshold), use compute_projection()')
 
 myGraph.compute_projection(rows=True, alpha=0.01, progress_bar=False)
 
-rows_projection = myGraph.get_rows_projection()
+# You can ask for an edgelist instead of an adjacency list by setting fmt="edgelist"
+print('You can ask for an edgelist instead of an adjacency list by setting fmt="edgelist"')
+
+rows_projection = myGraph.get_rows_projection(fmt='edgelist')
 print(rows_projection)
 
 # These projections only contain links between nodes that behave similarly with respect to the expected behavior calculated from the BiCM. They could also be empty:

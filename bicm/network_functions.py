@@ -197,11 +197,12 @@ def adjacency_list_from_biadjacency(biadjacency, return_inverse=True, return_deg
         if np.sum(biadjacency[biadjacency != 0] != 1) > 0:
             raise ValueError('Only binary matrices')
         coords = np.where(biadjacency != 0)
-    adj_list = {}
-    inv_adj_list = {}
+    biad_shape = np.shape(biadjacency)
+    adj_list = {k: set() for k in range(biad_shape[0])}
+    inv_adj_list = {k: set() for k in range(biad_shape[1])}
     for edge_i in range(len(coords[0])):
-        adj_list.setdefault(coords[0][edge_i], set()).add(coords[1][edge_i])
-        inv_adj_list.setdefault(coords[1][edge_i], set()).add(coords[0][edge_i])
+        adj_list[coords[0][edge_i]].add(coords[1][edge_i])
+        inv_adj_list[coords[1][edge_i]].add(coords[0][edge_i])
     return_args = [adj_list]
     if return_inverse:
         return_args.append(inv_adj_list)

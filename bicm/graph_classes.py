@@ -1332,6 +1332,7 @@ class BipartiteGraph:
         self.weighted = False
         self.rows_seq = None
         self.cols_seq = None
+        self.pvals_mat = None
         self._initialize_graph(biadjacency=biadjacency, adjacency_list=adjacency_list, edgelist=edgelist,
                                degree_sequences=degree_sequences)
 
@@ -2255,6 +2256,9 @@ class BipartiteGraph:
         self.rows_projection = rows
         self.projection_method = method
         self.progress_bar = progress_bar
+        if self.weighted:
+            print('Weighted projection not yet implemented.')
+            return
         if threads_num is None:
             if system() == 'Windows':
                 threads_num = 1
@@ -2265,7 +2269,7 @@ class BipartiteGraph:
                 threads_num = 1
                 print('Parallel processes not yet implemented on Windows, computing anyway...')
         self.threads_num = threads_num
-        if self.adj_list is None:
+        if self.adj_list is None and self.biadjacency is None:
             print('''
             Without the edges I can't compute the projection. 
             Use set_biadjacency_matrix, set_adjacency_list or set_edgelist to add edges.
@@ -2283,6 +2287,22 @@ class BipartiteGraph:
                 self.cols_pvals = self._projection_calculator()
                 self.projected_cols_adj_list = self._projection_from_pvals(alpha=alpha)
                 self.is_cols_projected = True
+                
+    def compute_weighted_pvals_mat(self):
+        if not self.is_randomized:
+            print('First I have to compute the BiCM. Computing...')
+            self.solve_tool()
+        self.pvals_mat = (np.tile(self.x, (len(self.y), 1)).T * np.tile(self.y, (len(self.x), 1))) ** self.biadjacency
+
+    def get_weighted_pvals_mat(self):
+        if self.pvals_mat is None:
+            self.compute_weighted_pvals_mat()
+        return self.pvals_mat
+
+    def get_rca_validated_matrix(self, significance=0.01):
+        if self.pvals_mat is None:
+            self.compute_weighted_pvals_mat()
+        return (self.pvals_mat < significance).astype(np.ubyte)
 
     def _pvals_validator(self, pval_list, alpha=0.05):
         sorted_pvals = np.sort(pval_list)

@@ -25,6 +25,24 @@ def bicm_from_fitnesses(x, y):
     return avg_mat
 
 
+@jit(nopython=True)
+def biwcm_from_fitnesses(x, y):
+    """
+    Rebuilds the average probability matrix of the biwcm from the fitnesses
+
+    :param x: the fitness vector of the rows layer
+    :type x: numpy.ndarray
+    :param y: the fitness vector of the columns layer
+    :type y: numpy.ndarray
+    """
+    avg_mat = np.zeros((len(x), len(y)))
+    for i in range(len(x)):
+        for j in range(len(y)):
+            xy = x[i] * y[j]
+            avg_mat[i, j] = xy / (1 - xy)
+    return avg_mat
+
+
 def sample_bicm(avg_mat):
     """
     Build a biadjacency matrix sampling from the probability matrix of a BiCM.
@@ -242,7 +260,7 @@ def biadjacency_from_adjacency_list(adj_list, fmt='array'):
     assert isinstance(list(adj_list.keys())[0], (int, float, complex)), 'Adjacency list must be numeric'
     rows_index = [k for k, v in adj_list.items() for _ in range(len(v))]
     cols_index = [i for ids in adj_list.values() for i in ids]
-    biad_mat = scipy.sparse.csr_matrix(([1] * len(rows_index), (rows_index, cols_index)))
+    biad_mat = scipy.sparse.csr_array(([1] * len(rows_index), (rows_index, cols_index)))
     if fmt == 'sparse':
         return biad_mat
     else:

@@ -1,6 +1,6 @@
 import numpy as np
 from numba import jit
-from . import solver_functions as sof
+import bicm.solver_functions as sof
 
 
 # BiCM functions
@@ -9,7 +9,7 @@ from . import solver_functions as sof
 
 @jit(nopython=True)
 def linsearch_fun_BiCM(xx, args):
-    """Linsearch function for BiCM newton and quasinewton methods.
+    """Linsearch function for BiCM/BiWCM newton and quasinewton methods.
     The function returns the step's size, alpha.
     Alpha determines how much to move on the descending direction
     found by the algorithm.
@@ -254,6 +254,75 @@ def iterative_bicm_exp(x0, args):
 
 
 @jit(nopython=True)
+def iterative_biwcm(x0, args):
+    """
+    Return the next iterative step for the Bipartite Configuration Model reduced version.
+
+    :param numpy.ndarray x0: initial point
+    :param list, tuple args: rows degree sequence, columns degree sequence, rows multipl., cols multipl.
+    :returns: next iteration step
+    :rtype: numpy.ndarray
+    """
+    r_sseq_rows = args[0]
+    r_sseq_cols = args[1]
+    rows_multiplicity = args[2]
+    cols_multiplicity = args[3]
+    num_rows = len(r_sseq_rows)
+    num_cols = len(r_sseq_cols)
+    x = x0[:num_rows]
+    y = x0[num_rows:]
+    x = np.exp(- x)
+    y = np.exp(- y)
+
+    f = np.zeros(len(x0))
+
+    for i in range(num_rows):
+        rows_multiplier = rows_multiplicity[i] * x[i]
+        for j in range(num_cols):
+            denom = 1 - x[i] * y[j]
+            f[i] += cols_multiplicity[j] * y[j] / denom
+            f[j + num_rows] += rows_multiplier / denom
+    tmp = np.concatenate((r_sseq_rows, r_sseq_cols))
+    ff = tmp / f
+    ff = - np.log(ff)
+
+    return ff
+
+
+@jit(nopython=True)
+def iterative_biwcm_exp(x0, args):
+    """
+    Return the next iterative step for the Bipartite Configuration Model reduced version.
+
+    :param numpy.ndarray x0: initial point
+    :param list, tuple args: rows degree sequence, columns degree sequence, rows multipl., cols multipl.
+    :returns: next iteration step
+    :rtype: numpy.ndarray
+    """
+    r_sseq_rows = args[0]
+    r_sseq_cols = args[1]
+    rows_multiplicity = args[2]
+    cols_multiplicity = args[3]
+    num_rows = len(r_sseq_rows)
+    num_cols = len(r_sseq_cols)
+    x = x0[:num_rows]
+    y = x0[num_rows:]
+
+    f = np.zeros(len(x0))
+
+    for i in range(num_rows):
+        rows_multiplier = rows_multiplicity[i] * x[i]
+        for j in range(num_cols):
+            denom = 1 - x[i] * y[j]
+            f[i] += cols_multiplicity[j] * y[j] / denom
+            f[j + num_rows] += rows_multiplier / denom
+    tmp = np.concatenate((r_sseq_rows, r_sseq_cols))
+    ff = tmp / f
+
+    return ff
+
+
+@jit(nopython=True)
 def jac_root(xx, multiplier_rows, multiplier_cols, nrows, ncols, out_j_t):
     """
     Jacobian for the root solver of the reduced BiCM.
@@ -348,6 +417,79 @@ def loglikelihood_bicm_exp(x0, args):
 
 
 @jit(nopython=True)
+def loglikelihood_biwcm(x0, args):
+    """
+    Log-likelihood function of the reduced BiCM.
+
+    :param numpy.ndarray x0: 1D fitnesses vector
+    :param args: list of arguments needed for the computation
+    :type args: list or tuple
+    :returns: log-likelihood of the system
+    :rtype: float
+    """
+    r_sseq_rows = args[0]
+    r_sseq_cols = args[1]
+    rows_multiplicity = args[2]
+    cols_multiplicity = args[3]
+    num_rows = len(r_sseq_rows)
+    num_cols = len(r_sseq_cols)
+    x = x0[:num_rows]
+    y = x0[num_rows:]
+    theta_x = np.copy(x)
+    theta_y = np.copy(y)
+    x = np.exp(- x)
+    y = np.exp(- y)
+
+    flag = True
+
+    f = 0
+    for i in range(num_rows):
+        f -= rows_multiplicity[i] * r_sseq_rows[i] * theta_x[i]
+        for j in range(num_cols):
+            if flag:
+                f -= cols_multiplicity[j] * r_sseq_cols[j] * theta_y[j]
+            f += rows_multiplicity[i] * cols_multiplicity[j] * np.log(1 - x[i] * y[j])
+        flag = False
+
+    return f
+
+
+@jit(nopython=True)
+def loglikelihood_biwcm_exp(x0, args):
+    """
+    Log-likelihood function of the reduced BiCM.
+
+    :param numpy.ndarray x0: 1D fitnesses vector
+    :param args: list of arguments needed for the computation
+    :type args: list or tuple
+    :returns: log-likelihood of the system
+    :rtype: float
+    """
+    r_sseq_rows = args[0]
+    r_sseq_cols = args[1]
+    rows_multiplicity = args[2]
+    cols_multiplicity = args[3]
+    num_rows = len(r_sseq_rows)
+    num_cols = len(r_sseq_cols)
+    x = x0[:num_rows]
+    y = x0[num_rows:]
+    theta_x = - np.log(x)
+    theta_y = - np.log(y)
+    flag = True
+
+    f = 0
+    for i in range(num_rows):
+        f -= rows_multiplicity[i] * r_sseq_rows[i] * theta_x[i]
+        for j in range(num_cols):
+            if flag:
+                f -= cols_multiplicity[j] * r_sseq_cols[j] * theta_y[j]
+            f += rows_multiplicity[i] * cols_multiplicity[j] * np.log(1 - x[i] * y[j])
+        flag = False
+
+    return f
+
+
+@jit(nopython=True)
 def loglikelihood_hessian_bicm(x0, args):
     """
     Log-likelihood hessian of the reduced BiCM.
@@ -385,6 +527,84 @@ def loglikelihood_hessian_bicm(x0, args):
 
 @jit(nopython=True)
 def loglikelihood_hessian_bicm_exp(x0, args):
+    """
+    Log-likelihood hessian of the reduced BiCM.
+
+    :param numpy.ndarray x0: 1D fitnesses vector
+    :param args: list of arguments needed for the computation
+    :type args: list, tuple
+    :returns: 2D hessian matrix of the system
+    :rtype: numpy.ndarray
+    """
+    r_dseq_rows = args[0]
+    r_dseq_cols = args[1]
+    rows_multiplicity = args[2]
+    cols_multiplicity = args[3]
+    num_rows = len(r_dseq_rows)
+    num_cols = len(r_dseq_cols)
+    x = x0[:num_rows]
+    y = x0[num_rows:]
+
+    out = np.zeros((len(x0), len(x0)))
+    x2 = x ** 2
+    y2 = y ** 2
+    flag = True
+
+    for h in range(num_rows):
+        out[h, h] -= r_dseq_rows[h] / x2[h]
+        for i in range(num_cols):
+            denom = (1 + x[h] * y[i]) ** 2
+            multiplier = cols_multiplicity[i] / denom
+            multiplier_h = rows_multiplicity[h] / denom
+            out[h, h] += y2[i] * multiplier
+            out[h, i + num_rows] = - multiplier
+            out[i + num_rows, i + num_rows] += x2[h] * multiplier_h
+            out[i + num_rows, h] = - multiplier_h
+            if flag:
+                out[i + num_rows, i + num_rows] -= r_dseq_cols[i] / y2[i]
+        flag = False
+
+    return out
+
+
+@jit(nopython=True)
+def loglikelihood_hessian_biwcm(x0, args):
+    """
+    Log-likelihood hessian of the reduced BiWCM.
+
+    :param numpy.ndarray x0: 1D fitnesses vector
+    :param args: list of arguments needed for the computation
+    :type args: list, tuple
+    :returns: 2D hessian matrix of the system
+    :rtype: numpy.ndarray
+    """
+    r_sseq_rows = args[0]
+    r_sseq_cols = args[1]
+    rows_multiplicity = args[2]
+    cols_multiplicity = args[3]
+    num_rows = len(r_sseq_rows)
+    num_cols = len(r_sseq_cols)
+    x = x0[:num_rows]
+    y = x0[num_rows:]
+
+    out = np.zeros((len(x0), len(x0)))
+    x = np.exp(- x)
+    y = np.exp(- y)
+
+    for h in range(num_rows):
+        for i in range(num_cols):
+            denom = (1 - x[h] * y[i]) ** 2
+            add = cols_multiplicity[i] * rows_multiplicity[h] * x[h] * y[i] / denom
+            out[h, h] -= add
+            out[h, i + num_rows] = - add
+            out[i + num_rows, h] = - add
+            out[i + num_rows, i + num_rows] -= add
+
+    return out
+
+
+@jit(nopython=True)
+def loglikelihood_hessian_biwcm_exp(x0, args): #To be implemented
     """
     Log-likelihood hessian of the reduced BiCM.
 
@@ -498,6 +718,78 @@ def loglikelihood_hessian_diag_bicm_exp(x0, args):
 
 
 @jit(nopython=True)
+def loglikelihood_hessian_diag_biwcm(x0, args):
+    """
+    Log-likelihood diagonal hessian of the reduced BiWCM.
+
+    :param numpy.ndarray x0: 1D fitnesses vector
+    :param args: list of arguments needed for the computation
+    :type args: list, tuple
+    :returns: 2D hessian matrix of the system
+    :rtype: numpy.ndarray
+    """
+    r_sseq_rows = args[0]
+    r_sseq_cols = args[1]
+    rows_multiplicity = args[2]
+    cols_multiplicity = args[3]
+    num_rows = len(r_sseq_rows)
+    num_cols = len(r_sseq_cols)
+    x = x0[:num_rows]
+    y = x0[num_rows:]
+    x = np.exp(- x)
+    y = np.exp(- y)
+
+    f = np.zeros(num_rows + num_cols)
+
+    for i in range(num_rows):
+        for j in range(num_cols):
+            denom = (1 - x[i] * y[j]) ** 2
+            add = cols_multiplicity[j] * rows_multiplicity[i] * x[i] * y[j] / denom
+            f[i] -= add
+            f[j + num_rows] -= add
+
+    return f
+
+
+@jit(nopython=True)
+def loglikelihood_hessian_diag_biwcm_exp(x0, args): #To be implemented
+    """
+    Log-likelihood diagonal hessian of the reduced BiWCM.
+
+    :param numpy.ndarray x0: 1D fitnesses vector
+    :param args: list of arguments needed for the computation
+    :type args: list, tuple
+    :returns: 2D hessian matrix of the system
+    :rtype: numpy.ndarray
+    """
+    r_dseq_rows = args[0]
+    r_dseq_cols = args[1]
+    rows_multiplicity = args[2]
+    cols_multiplicity = args[3]
+    num_rows = len(r_dseq_rows)
+    num_cols = len(r_dseq_cols)
+    x = x0[:num_rows]
+    y = x0[num_rows:]
+    x2 = x ** 2
+    y2 = y ** 2
+
+    f = np.zeros(num_rows + num_cols)
+    flag = True
+
+    for i in range(num_rows):
+        for j in range(num_cols):
+            denom = (1 + x[i] * y[j]) ** 2
+            f[i] += cols_multiplicity[j] * y2[j] / denom
+            f[j + num_rows] += rows_multiplicity[i] * x2[i] / denom
+            if flag:
+                f[j + num_rows] -= r_dseq_cols[j] / y2[j]
+        f[i] -= r_dseq_rows[i] / x2[i]
+        flag = False
+
+    return f
+
+
+@jit(nopython=True)
 def loglikelihood_prime_bicm(x0, args):
     """
     Iterative function for loglikelihood gradient BiCM.
@@ -540,6 +832,82 @@ def loglikelihood_prime_bicm(x0, args):
 def loglikelihood_prime_bicm_exp(x0, args):
     """
     Iterative function for loglikelihood gradient BiCM.
+
+    :param x0: fitnesses vector
+    :type x0: numpy.array
+    :param args: list of arguments needed for the computation
+    :type args: list or tuple
+    :returns: log-likelihood of the system
+    :rtype: numpy.array
+    """
+    r_dseq_rows = args[0]
+    r_dseq_cols = args[1]
+    rows_multiplicity = args[2]
+    cols_multiplicity = args[3]
+    num_rows = len(r_dseq_rows)
+    num_cols = len(r_dseq_cols)
+    x = x0[:num_rows]
+    y = x0[num_rows:]
+
+    f = np.zeros(len(x0))
+    flag = True
+
+    for i in range(num_rows):
+        for j in range(num_cols):
+            denom = 1 + x[i] * y[j]
+            f[i] -= y[j] * cols_multiplicity[j] / denom
+            f[j + num_rows] -= x[i] * rows_multiplicity[i] / denom
+            if flag:
+                f[j + num_rows] += r_dseq_cols[j] / y[j]
+        f[i] += r_dseq_rows[i] / x[i]
+        flag = False
+
+    return f
+
+
+@jit(nopython=True)
+def loglikelihood_prime_biwcm(x0, args):
+    """
+    Iterative function for loglikelihood gradient BiWCM.
+
+    :param x0: fitnesses vector
+    :type x0: numpy.array
+    :param args: list of arguments needed for the computation
+    :type args: list or tuple
+    :returns: log-likelihood of the system
+    :rtype: numpy.array
+    """
+    r_sseq_rows = args[0]
+    r_sseq_cols = args[1]
+    rows_multiplicity = args[2]
+    cols_multiplicity = args[3]
+    num_rows = len(r_sseq_rows)
+    num_cols = len(r_sseq_cols)
+    x = x0[:num_rows]
+    y = x0[num_rows:]
+    x = np.exp(- x)
+    y = np.exp(- y)
+
+    f = np.zeros(len(x0))
+    flag = True
+
+    for i in range(num_rows):
+        for j in range(num_cols):
+            denom = 1 - x[i] * y[j]
+            add = y[j] * x[i] * rows_multiplicity[i] * cols_multiplicity[j] / denom
+            f[i] += add
+            f[j + num_rows] += add
+            if flag:
+                f[j + num_rows] -= r_sseq_cols[j] * cols_multiplicity[j]
+        f[i] -= r_sseq_rows[i] * rows_multiplicity[i]
+        flag = False
+
+    return f
+
+@jit(nopython=True)
+def loglikelihood_prime_biwcm_exp(x0, args): # To be implemented
+    """
+    Iterative function for loglikelihood gradient BiWCM.
 
     :param x0: fitnesses vector
     :type x0: numpy.array

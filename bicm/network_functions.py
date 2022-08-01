@@ -43,6 +43,25 @@ def biwcm_from_fitnesses(x, y):
     return avg_mat
 
 
+@jit(nopython=True)
+def bicwcm_from_fitnesses(x, y):
+    """
+    Rebuilds the average probability matrix of the bicwcm from the fitnesses
+
+    :param x: the fitness vector of the rows layer
+    :type x: numpy.ndarray
+    :param y: the fitness vector of the columns layer
+    :type y: numpy.ndarray
+    """
+    avg_mat = np.zeros((len(x), len(y)))
+    theta_x = - np.log(x)
+    theta_y = - np.log(y)
+    for i in range(len(x)):
+        for j in range(len(y)):
+            avg_mat[i, j] = 1 / (theta_x[i] + theta_y[j])
+    return avg_mat
+
+
 def sample_bicm(avg_mat):
     """
     Build a biadjacency matrix sampling from the probability matrix of a BiCM.

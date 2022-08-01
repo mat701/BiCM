@@ -39,11 +39,11 @@ def linsearch_fun_BiCM(xx, args):
     i = 0
     s_old = -step_fun(x, arg_step_fun)
     while (
-        sof.sufficient_decrease_condition(
-            s_old, -step_fun(x + alfa * dx, arg_step_fun), alfa, f, dx
-        )
-        is False
-        and i < 50
+            sof.sufficient_decrease_condition(
+                s_old, -step_fun(x + alfa * dx, arg_step_fun), alfa, f, dx
+            )
+            is False
+            and i < 50
     ):
         alfa *= beta
         i += 1
@@ -79,14 +79,14 @@ def linsearch_fun_BiCM_fixed(xx):
 
     if step:
         kk = 0
-        cond = np.linalg.norm(alfa*dx) < np.linalg.norm(dx_old)
-        while(
-            cond is False
-            and kk < 50
-             ):
+        cond = np.linalg.norm(alfa * dx) < np.linalg.norm(dx_old)
+        while (
+                cond is False
+                and kk < 50
+        ):
             alfa *= beta
             kk += 1
-            cond = np.linalg.norm(alfa*dx) < np.linalg.norm(dx_old)
+            cond = np.linalg.norm(alfa * dx) < np.linalg.norm(dx_old)
     return alfa
 
 
@@ -117,11 +117,11 @@ def linsearch_fun_BiCM_exp(xx, args):
     i = 0
     s_old = -step_fun(x, arg_step_fun)
     while (
-        sof.sufficient_decrease_condition(
-            s_old, -step_fun(x + alfa * dx, arg_step_fun), alfa, f, dx
-        )
-        is False
-        and i < 50
+            sof.sufficient_decrease_condition(
+                s_old, -step_fun(x + alfa * dx, arg_step_fun), alfa, f, dx
+            )
+            is False
+            and i < 50
     ):
         alfa *= beta
         i += 1
@@ -151,13 +151,13 @@ def linsearch_fun_BiCM_exp_fixed(xx):
     if step:
         kk = 0
         cond = np.linalg.norm(alfa * dx) < np.linalg.norm(dx_old)
-        while(
-            not cond
-            and kk < 50
-             ):
+        while (
+                not cond
+                and kk < 50
+        ):
             alfa *= beta
             kk += 1
-            cond = np.linalg.norm(alfa*dx) < np.linalg.norm(dx_old)
+            cond = np.linalg.norm(alfa * dx) < np.linalg.norm(dx_old)
     return alfa
 
 
@@ -318,6 +318,37 @@ def iterative_biwcm_exp(x0, args):
             f[j + num_rows] += rows_multiplier / denom
     tmp = np.concatenate((r_sseq_rows, r_sseq_cols))
     ff = tmp / f
+
+    return ff
+
+
+@jit(nopython=True)
+def iterative_bicwcm(x0, args):
+    """
+    Return the next iterative step for the Bipartite Configuration Model reduced version.
+
+    :param numpy.ndarray x0: initial point
+    :param list, tuple args: rows degree sequence, columns degree sequence, rows multipl., cols multipl.
+    :returns: next iteration step
+    :rtype: numpy.ndarray
+    """
+    r_sseq_rows = args[0]
+    r_sseq_cols = args[1]
+    rows_multiplicity = args[2]
+    cols_multiplicity = args[3]
+    num_rows = len(r_sseq_rows)
+    num_cols = len(r_sseq_cols)
+    theta_x = x0[:num_rows]
+    theta_y = x0[num_rows:]
+
+    f = np.zeros(len(x0))
+
+    for i in range(num_rows):
+        for j in range(num_cols):
+            f[i] += cols_multiplicity[j] / (1 + theta_y[j] / theta_x[i])
+            f[j + num_rows] += rows_multiplicity[i] / (1 + theta_x[i] / theta_y[j])
+    tmp = np.concatenate((r_sseq_rows, r_sseq_cols))
+    ff = f / tmp
 
     return ff
 
@@ -490,6 +521,40 @@ def loglikelihood_biwcm_exp(x0, args):
 
 
 @jit(nopython=True)
+def loglikelihood_bicwcm(x0, args):
+    """
+    Log-likelihood function of the reduced BiCWCM.
+
+    :param numpy.ndarray x0: 1D fitnesses vector
+    :param args: list of arguments needed for the computation
+    :type args: list or tuple
+    :returns: log-likelihood of the system
+    :rtype: float
+    """
+    r_sseq_rows = args[0]
+    r_sseq_cols = args[1]
+    rows_multiplicity = args[2]
+    cols_multiplicity = args[3]
+    num_rows = len(r_sseq_rows)
+    num_cols = len(r_sseq_cols)
+    theta_x = x0[:num_rows]
+    theta_y = x0[num_rows:]
+
+    flag = True
+
+    f = 0
+    for i in range(num_rows):
+        f -= rows_multiplicity[i] * r_sseq_rows[i] * theta_x[i]
+        for j in range(num_cols):
+            if flag:
+                f -= cols_multiplicity[j] * r_sseq_cols[j] * theta_y[j]
+            f += rows_multiplicity[i] * cols_multiplicity[j] * np.log(theta_x[i] + theta_y[j])
+        flag = False
+
+    return f
+
+
+@jit(nopython=True)
 def loglikelihood_hessian_bicm(x0, args):
     """
     Log-likelihood hessian of the reduced BiCM.
@@ -604,7 +669,7 @@ def loglikelihood_hessian_biwcm(x0, args):
 
 
 @jit(nopython=True)
-def loglikelihood_hessian_biwcm_exp(x0, args): #To be implemented
+def loglikelihood_hessian_biwcm_exp(x0, args):  # To be implemented
     """
     Log-likelihood hessian of the reduced BiCM.
 
@@ -641,6 +706,39 @@ def loglikelihood_hessian_biwcm_exp(x0, args): #To be implemented
             if flag:
                 out[i + num_rows, i + num_rows] -= r_dseq_cols[i] / y2[i]
         flag = False
+
+    return out
+
+
+@jit(nopython=True)
+def loglikelihood_hessian_bicwcm(x0, args):
+    """
+    Log-likelihood hessian of the reduced BiCWCM.
+
+    :param numpy.ndarray x0: 1D fitnesses vector
+    :param args: list of arguments needed for the computation
+    :type args: list, tuple
+    :returns: 2D hessian matrix of the system
+    :rtype: numpy.ndarray
+    """
+    r_sseq_rows = args[0]
+    r_sseq_cols = args[1]
+    rows_multiplicity = args[2]
+    cols_multiplicity = args[3]
+    num_rows = len(r_sseq_rows)
+    num_cols = len(r_sseq_cols)
+    theta_x = x0[:num_rows]
+    theta_y = x0[num_rows:]
+
+    out = np.zeros((len(x0), len(x0)))
+
+    for h in range(num_rows):
+        for i in range(num_cols):
+            add = cols_multiplicity[i] * rows_multiplicity[h] / ((theta_x[h] + theta_y[i]) ** 2)
+            out[h, h] -= add
+            out[h, i + num_rows] = - add
+            out[i + num_rows, h] = - add
+            out[i + num_rows, i + num_rows] -= add
 
     return out
 
@@ -752,7 +850,7 @@ def loglikelihood_hessian_diag_biwcm(x0, args):
 
 
 @jit(nopython=True)
-def loglikelihood_hessian_diag_biwcm_exp(x0, args): #To be implemented
+def loglikelihood_hessian_diag_biwcm_exp(x0, args):  # To be implemented
     """
     Log-likelihood diagonal hessian of the reduced BiWCM.
 
@@ -785,6 +883,37 @@ def loglikelihood_hessian_diag_biwcm_exp(x0, args): #To be implemented
                 f[j + num_rows] -= r_dseq_cols[j] / y2[j]
         f[i] -= r_dseq_rows[i] / x2[i]
         flag = False
+
+    return f
+
+
+@jit(nopython=True)
+def loglikelihood_hessian_diag_bicwcm(x0, args):
+    """
+    Log-likelihood hessian of the reduced BiCWCM.
+
+    :param numpy.ndarray x0: 1D fitnesses vector
+    :param args: list of arguments needed for the computation
+    :type args: list, tuple
+    :returns: 2D hessian matrix of the system
+    :rtype: numpy.ndarray
+    """
+    r_sseq_rows = args[0]
+    r_sseq_cols = args[1]
+    rows_multiplicity = args[2]
+    cols_multiplicity = args[3]
+    num_rows = len(r_sseq_rows)
+    num_cols = len(r_sseq_cols)
+    theta_x = x0[:num_rows]
+    theta_y = x0[num_rows:]
+
+    f = np.zeros(num_rows + num_cols)
+
+    for h in range(num_rows):
+        for i in range(num_cols):
+            add = cols_multiplicity[i] * rows_multiplicity[h] / ((theta_x[h] + theta_y[i]) ** 2)
+            f[h] -= add
+            f[i + num_rows] -= add
 
     return f
 
@@ -827,6 +956,7 @@ def loglikelihood_prime_bicm(x0, args):
         flag = False
 
     return f
+
 
 @jit(nopython=True)
 def loglikelihood_prime_bicm_exp(x0, args):
@@ -904,8 +1034,9 @@ def loglikelihood_prime_biwcm(x0, args):
 
     return f
 
+
 @jit(nopython=True)
-def loglikelihood_prime_biwcm_exp(x0, args): # To be implemented
+def loglikelihood_prime_biwcm_exp(x0, args):  # To be implemented
     """
     Iterative function for loglikelihood gradient BiWCM.
 
@@ -939,3 +1070,60 @@ def loglikelihood_prime_biwcm_exp(x0, args): # To be implemented
         flag = False
 
     return f
+
+
+@jit(nopython=True)
+def loglikelihood_prime_bicwcm(x0, args):
+    """
+    Iterative function for loglikelihood gradient BiCWCM.
+
+    :param x0: fitnesses vector
+    :type x0: numpy.array
+    :param args: list of arguments needed for the computation
+    :type args: list or tuple
+    :returns: log-likelihood of the system
+    :rtype: numpy.array
+    """
+    r_sseq_rows = args[0]
+    r_sseq_cols = args[1]
+    rows_multiplicity = args[2]
+    cols_multiplicity = args[3]
+    num_rows = len(r_sseq_rows)
+    num_cols = len(r_sseq_cols)
+    theta_x = x0[:num_rows]
+    theta_y = x0[num_rows:]
+
+    f = np.zeros(len(x0))
+    flag = True
+
+    for i in range(num_rows):
+        for j in range(num_cols):
+            add = rows_multiplicity[i] * cols_multiplicity[j] / theta_x[i] + theta_y[j]
+            f[i] += add
+            f[j + num_rows] += add
+            if flag:
+                f[j + num_rows] -= r_sseq_cols[j] * cols_multiplicity[j]
+        f[i] -= r_sseq_rows[i] * rows_multiplicity[i]
+        flag = False
+
+    return f
+
+
+def loglikelihood_prime_bicwcm_exp(x, args):  # To be implemented
+    return None
+
+
+def iterative_bicwcm_exp(x, args):  # To be implemented
+    return None
+
+
+def loglikelihood_hessian_bicwcm_exp(x, args):  # To be implemented
+    return None
+
+
+def loglikelihood_hessian_diag_bicwcm_exp(x, args):  # To be implemented
+    return None
+
+
+def loglikelihood_bicwcm_exp(x, args):  # To be implemented
+    return None

@@ -1330,9 +1330,11 @@ class BipartiteGraph:
         self.loglikelihood = None
         self.progress_bar = None
         self.weighted = False
+        self.continuous_weights = False
         self.rows_seq = None
         self.cols_seq = None
         self.pvals_mat = None
+        self.exp = False
         self._initialize_graph(biadjacency=biadjacency, adjacency_list=adjacency_list, edgelist=edgelist,
                                degree_sequences=degree_sequences)
 
@@ -1369,7 +1371,8 @@ class BipartiteGraph:
                 if self.biadjacency.shape[0] == self.biadjacency.shape[1]:
                     print(
                         'Your matrix is square. Please remember that it is treated as a biadjacency matrix, not an adjacency matrix.')
-                if np.max(self.biadjacency) > 1:
+                self.continuous_weights = not np.all(np.equal(np.mod(self.biadjacency, 1), 0))
+                if self.continuous_weights or np.max(self.biadjacency) > 1:
                     print('Weighted model mode')
                     self.weighted = True
                     self.rows_seq = self.biadjacency.sum(1)
@@ -1379,6 +1382,7 @@ class BipartiteGraph:
                 else:
                     self.adj_list, self.inv_adj_list, self.rows_deg, self.cols_deg = \
                         nef.adjacency_list_from_biadjacency(self.biadjacency)
+
                 self.n_rows = len(self.rows_deg)
                 self.n_cols = len(self.cols_deg)
                 self._initialize_node_dictionaries()
@@ -1480,19 +1484,19 @@ class BipartiteGraph:
             self.r_y = self.r_cols_deg.astype(np.float64)
         else:
             raise ValueError('initial_guess must be None, "chung_lu", "random", "uniform" or "degrees"')
-        if self.weighted:
-            norm = max(np.max(self.r_x), np.max(self.r_y))
-            if norm >= 1:
-                self.r_x /= 2 * norm
-                self.r_y /= 2 * norm
         if not self.exp:
+            if self.weighted: # Avoid negative thetas
+                norm = max(np.max(self.r_x), np.max(self.r_y))
+                if norm >= 1:
+                    self.r_x /= 2 * norm
+                    self.r_y /= 2 * norm
             self.r_theta_x = - np.log(self.r_x)
             self.r_theta_y = - np.log(self.r_y)
             self.x0 = np.concatenate((self.r_theta_x, self.r_theta_y))
+            # if self.weighted: # Avoid thetas' products = 1
+            #     self.x0 /= 2 * np.max(np.abs(self.x0))
         else:
             self.x0 = np.concatenate((self.r_x, self.r_y))
-        if self.weighted:
-            self.x0 /= np.abs(2 * np.max(np.abs(self.x0)))
 
     def initialize_avg_mat(self):
         """
@@ -1602,7 +1606,32 @@ class BipartiteGraph:
             self.residuals = np.zeros(self.r_dim, dtype=np.float64)
         else:
             self.args = (self.r_rows_deg, self.r_cols_deg, self.rows_multiplicity, self.cols_multiplicity)
-            if self.weighted:
+            if self.continuous_weights:
+                d_fun = {
+                    'newton': lambda x: - mof.loglikelihood_prime_bicwcm(x, self.args),
+                    'quasinewton': lambda x: - mof.loglikelihood_prime_bicwcm(x, self.args),
+                    'fixed-point': lambda x: mof.iterative_bicwcm(x, self.args),
+                    'newton_exp': lambda x: - mof.loglikelihood_prime_bicwcm_exp(x, self.args),
+                    'quasinewton_exp': lambda x: - mof.loglikelihood_prime_bicwcm_exp(x, self.args),
+                    'fixed-point_exp': lambda x: mof.iterative_bicwcm_exp(x, self.args),
+                }
+                d_fun_jac = {
+                    'newton': lambda x: - mof.loglikelihood_hessian_bicwcm(x, self.args),
+                    'quasinewton': lambda x: - mof.loglikelihood_hessian_diag_bicwcm(x, self.args),
+                    'fixed-point': None,
+                    'newton_exp': lambda x: - mof.loglikelihood_hessian_bicwcm_exp(x, self.args),
+                    'quasinewton_exp': lambda x: - mof.loglikelihood_hessian_diag_bicwcm_exp(x, self.args),
+                    'fixed-point_exp': None,
+                }
+                d_fun_step = {
+                    'newton': lambda x: - mof.loglikelihood_bicwcm(x, self.args),
+                    'quasinewton': lambda x: - mof.loglikelihood_bicwcm(x, self.args),
+                    'fixed-point': lambda x: - mof.loglikelihood_bicwcm(x, self.args),
+                    'newton_exp': lambda x: - mof.loglikelihood_bicwcm_exp(x, self.args),
+                    'quasinewton_exp': lambda x: - mof.loglikelihood_bicwcm_exp(x, self.args),
+                    'fixed-point_exp': lambda x: - mof.loglikelihood_bicwcm_exp(x, self.args),
+                }
+            elif self.weighted:
                 d_fun = {
                     'newton': lambda x: - mof.loglikelihood_prime_biwcm(x, self.args),
                     'quasinewton': lambda x: - mof.loglikelihood_prime_biwcm(x, self.args),
@@ -1664,7 +1693,12 @@ class BipartiteGraph:
                 method = self.method
             
             # lins_args = (d_fun_step[method], self.args)
-            if self.weighted:
+            if self.continuous_weights:
+                if self.exp:
+                    lins_args = (mof.loglikelihood_bicwcm_exp, self.args)
+                else:
+                    lins_args = (mof.loglikelihood_bicwcm, self.args)
+            elif self.weighted:
                 if self.exp:
                     lins_args = (mof.loglikelihood_biwcm_exp, self.args)
                 else:
@@ -1914,7 +1948,9 @@ class BipartiteGraph:
                     linsearch=self.linsearch,
                 )
             self._set_solved_problem(sol)
-            if self.weighted:
+            if self.continuous_weights:
+                r_avg_mat = nef.bicwcm_from_fitnesses(self.x[self.nonfixed_rows], self.y[self.nonfixed_cols])
+            elif self.weighted:
                 r_avg_mat = nef.biwcm_from_fitnesses(self.x[self.nonfixed_rows], self.y[self.nonfixed_cols])
             else:
                 r_avg_mat = nef.bicm_from_fitnesses(self.x[self.nonfixed_rows], self.y[self.nonfixed_cols])
@@ -1974,7 +2010,7 @@ class BipartiteGraph:
 
     def solve_tool(
             self,
-            method='newton',
+            method=None,
             initial_guess=None,
             light_mode=None,
             tol=1e-8,
@@ -1985,13 +2021,14 @@ class BipartiteGraph:
             regularise=None,
             print_error=True,
             full_return=False,
-            exp=False):
+            exp=False,
+            model=None):
         """Solve the BiCM of the graph.
         It does not return the solution, use the getter methods instead.
 
         :param bool light_mode: Doesn't use matrices in the computation if this is set to True.
             If the graph has been initialized without the matrix, the light mode is used regardless.
-        :param str method: Method of choice among *newton*, *quasinewton* or *iterative*, default is newton
+        :param str method: Method of choice among *newton*, *quasinewton* or *iterative*, default is set by the model solved
         :param str initial_guess: Initial guess of choice among *None*, *random*, *uniform* or *degrees*, default is None
         :param float tol: Tolerance of the solution, optional
         :param int max_steps: Maximum number of steps, optional
@@ -2001,7 +2038,22 @@ class BipartiteGraph:
         :param bool print_error: Print the final error of the solution
         :param bool exp: if this is set to true the solver works with the reparameterization $x_i = e^{-\theta_i}$,
             $y_\alpha = e^{-\theta_\alpha}$. It might be slightly faster but also might not converge.
+        :param str model: Model to be used, to be passed only if the user wants to use a different model than the recognized one.
         """
+        if model == 'bicwcm':
+            self.continuous_weights = True
+            self.weighted = True
+        elif model == 'biwcm':
+            self.continuous_weights = False
+            self.weighted = True
+        elif model == 'bicm':
+            self.weighted = False
+            self.continuous_weights = False
+        if method is None:
+            if self.continuous_weights:
+                method = 'fixed-point'
+            else:
+                method = 'newton'
         if not self.is_initialized:
             print('Graph is not initialized. I can\'t compute the BiCM.')
             return

@@ -1333,8 +1333,11 @@ class BipartiteGraph:
         self.continuous_weights = False
         self.rows_seq = None
         self.cols_seq = None
+        self.r_rows_seq = None
+        self.r_cols_seq = None
         self.pvals_mat = None
         self.exp = False
+        self.error = None
         self._initialize_graph(biadjacency=biadjacency, adjacency_list=adjacency_list, edgelist=edgelist,
                                degree_sequences=degree_sequences)
 
@@ -1373,12 +1376,15 @@ class BipartiteGraph:
                         'Your matrix is square. Please remember that it is treated as a biadjacency matrix, not an adjacency matrix.')
                 self.continuous_weights = not np.all(np.equal(np.mod(self.biadjacency, 1), 0))
                 if self.continuous_weights or np.max(self.biadjacency) > 1:
-                    print('Weighted model mode')
                     self.weighted = True
                     self.rows_seq = self.biadjacency.sum(1)
                     self.cols_seq = self.biadjacency.sum(0)
                     self.rows_deg = (self.biadjacency != 0).sum(1)
                     self.cols_deg = (self.biadjacency != 0).sum(0)
+                    if self.continuous_weights:
+                        print('Continuous weighted model: Bicwcm')
+                    else:
+                        print('Discrete weighted model: Biwcm')
                 else:
                     self.adj_list, self.inv_adj_list, self.rows_deg, self.cols_deg = \
                         nef.adjacency_list_from_biadjacency(self.biadjacency)
@@ -1460,6 +1466,9 @@ class BipartiteGraph:
             = np.unique(rows_deg, return_index=False, return_inverse=True, return_counts=True)
         self.r_cols_deg, self.r_invert_cols_deg, self.cols_multiplicity \
             = np.unique(cols_deg, return_index=False, return_inverse=True, return_counts=True)
+        if self.weighted:
+            self.r_rows_seq = np.copy(self.r_rows_deg)
+            self.r_cols_seq = np.copy(self.r_cols_deg)
         self.r_n_rows = self.r_rows_deg.size
         self.r_n_cols = self.r_cols_deg.size
         self.r_dim = self.r_n_rows + self.r_n_cols
@@ -1571,15 +1580,20 @@ class BipartiteGraph:
                       ''')
             zero_rows = np.where(self.rows_deg == 0)[0]
             zero_cols = np.where(self.cols_deg == 0)[0]
-            full_rows = np.where(self.rows_deg == self.n_cols)[0]
-            full_cols = np.where(self.cols_deg == self.n_rows)[0]
-            self.x[full_rows] = np.inf
-            self.y[full_cols] = np.inf
             if not self.exp:
-                self.theta_x[full_rows] = - np.inf
-                self.theta_y[full_rows] = - np.inf
                 self.theta_x[zero_rows] = np.inf
                 self.theta_y[zero_cols] = np.inf
+            if not self.weighted:
+                full_rows = np.where(self.rows_deg == self.n_cols)[0]
+                full_cols = np.where(self.cols_deg == self.n_rows)[0]
+                self.x[full_rows] = np.inf
+                self.y[full_cols] = np.inf
+                if not self.exp:
+                    self.theta_x[full_rows] = - np.inf
+                    self.theta_y[full_rows] = - np.inf
+            else:
+                full_rows = np.array([])
+                full_cols = np.array([])
             bad_rows = np.concatenate((zero_rows, full_rows))
             bad_cols = np.concatenate((zero_cols, full_cols))
             good_rows = np.delete(np.arange(self.n_rows), bad_rows)
@@ -1624,9 +1638,12 @@ class BipartiteGraph:
                     'fixed-point_exp': None,
                 }
                 d_fun_step = {
-                    'newton': lambda x: - mof.loglikelihood_bicwcm(x, self.args),
-                    'quasinewton': lambda x: - mof.loglikelihood_bicwcm(x, self.args),
-                    'fixed-point': lambda x: - mof.loglikelihood_bicwcm(x, self.args),
+                    # 'newton': lambda x: - mof.loglikelihood_bicwcm(x, self.args),
+                    # 'quasinewton': lambda x: - mof.loglikelihood_bicwcm(x, self.args),
+                    # 'fixed-point': lambda x: - mof.loglikelihood_bicwcm(x, self.args),
+                    'newton': lambda x: mof.mrse_bicwcm(x, self.args),
+                    'quasinewton': lambda x: mof.mrse_bicwcm(x, self.args),
+                    'fixed-point': lambda x: mof.mrse_bicwcm(x, self.args),
                     'newton_exp': lambda x: - mof.loglikelihood_bicwcm_exp(x, self.args),
                     'quasinewton_exp': lambda x: - mof.loglikelihood_bicwcm_exp(x, self.args),
                     'fixed-point_exp': lambda x: - mof.loglikelihood_bicwcm_exp(x, self.args),
@@ -1649,9 +1666,12 @@ class BipartiteGraph:
                     'fixed-point_exp': None,
                 }
                 d_fun_step = {
-                    'newton': lambda x: - mof.loglikelihood_biwcm(x, self.args),
-                    'quasinewton': lambda x: - mof.loglikelihood_biwcm(x, self.args),
-                    'fixed-point': lambda x: - mof.loglikelihood_biwcm(x, self.args),
+                    # 'newton': lambda x: - mof.loglikelihood_biwcm(x, self.args),
+                    # 'quasinewton': lambda x: - mof.loglikelihood_biwcm(x, self.args),
+                    # 'fixed-point': lambda x: - mof.loglikelihood_biwcm(x, self.args),
+                    'newton': lambda x: mof.mrse_biwcm(x, self.args),
+                    'quasinewton': lambda x: mof.mrse_biwcm(x, self.args),
+                    'fixed-point': lambda x: mof.mrse_biwcm(x, self.args),
                     'newton_exp': lambda x: - mof.loglikelihood_biwcm_exp(x, self.args),
                     'quasinewton_exp': lambda x: - mof.loglikelihood_biwcm_exp(x, self.args),
                     'fixed-point_exp': lambda x: - mof.loglikelihood_biwcm_exp(x, self.args),
@@ -1767,7 +1787,7 @@ class BipartiteGraph:
         return res.x
 
     @staticmethod
-    def check_sol(biad_mat, avg_bicm, return_error=False, in_place=False):
+    def check_sol(biad_mat, avg_bicm, return_error=False, in_place=False, mrse=None):
         """
         Static method.
         This function prints the rows sums differences between two matrices, that originally are the biadjacency matrix and its bicm average matrix.
@@ -1787,30 +1807,49 @@ class BipartiteGraph:
             if np.any(avg_bicm > 1):
                 print('Probabilities greater than 1 in the average matrix!')
                 error = 1
-        rows_error_vec = np.abs(np.sum(biad_mat, axis=1) - np.sum(avg_bicm, axis=1))
+        if mrse is None:
+            if weighted:
+                mrse = True
+            else:
+                mrse=False
+        rows_sums = np.sum(biad_mat, axis=1)
+        cols_sums = np.sum(biad_mat, axis=0)
+        if mrse:
+            rows_error_vec = np.zeros(len(rows_sums))
+            cols_error_vec = np.zeros(len(cols_sums))
+            nonzero_rows = np.where(rows_sums != 0)[0]
+            nonzero_cols = np.where(cols_sums != 0)[0]
+            rows_error_vec[nonzero_rows] = np.abs(rows_sums - np.sum(avg_bicm, axis=1))[nonzero_rows] / rows_sums[nonzero_rows]
+            cols_error_vec[nonzero_cols] = np.abs(cols_sums - np.sum(avg_bicm, axis=0))[nonzero_cols] / cols_sums[nonzero_cols]
+        else:
+            rows_error_vec = np.abs(rows_sums - np.sum(avg_bicm, axis=1))
+            cols_error_vec = np.abs(cols_sums - np.sum(avg_bicm, axis=0))    
         err_rows = np.max(rows_error_vec)
-        print('max rows error =', err_rows)
-        cols_error_vec = np.abs(np.sum(biad_mat, axis=0) - np.sum(avg_bicm, axis=0))
         err_cols = np.max(cols_error_vec)
+        print('max rows error =', err_rows)
         print('max columns error =', err_cols)
         tot_err = np.sum(rows_error_vec) + np.sum(cols_error_vec)
         print('total error =', tot_err)
-        if tot_err > 1:
-            error = 1
-            print('WARNING total error > 1')
-            if tot_err > 10:
-                print('total error > 10')
-        if err_rows + err_cols > 1:
-            print('max error > 1')
-            error = 1
-            if err_rows + err_cols > 10:
-                print('max error > 10')
+        max_err = np.max([err_rows, err_cols])
+        if max_err > 1e-3:
+            # error = 1
+            print('WARNING max error > 0.001')
+            # if tot_err > 10:
+            #     print('total error > 10')
+        # if err_rows + err_cols > 1:
+        #     print('max error > 1')
+        #     error = 1
+        #     if err_rows + err_cols > 10:
+        #         print('max error > 10')
         if in_place:
             diff_mat = np.abs(biad_mat - avg_bicm)
             print('In-place total error:', np.sum(diff_mat))
             print('In-place max error:', np.max(diff_mat))
         if return_error:
-            return error
+            if error == 1:
+                return error
+            else:
+                return max_err
         else:
             return
 
@@ -1819,38 +1858,59 @@ class BipartiteGraph:
         Light version of the check_sol function, working only on the fitnesses and the degree sequences.
         """
         error = 0
-        rows_error_vec = []
+        exp_rows_sum = np.zeros(self.r_n_rows)
+        exp_cols_sum = np.zeros(self.r_n_cols)
+    
         for i in range(self.r_n_rows):
-            row_avgs = self.r_x[i] * self.r_y / (1 + self.r_x[i] * self.r_y)
-            if error == 0:
-                if np.any(row_avgs < 0):
-                    print('Warning: negative link probabilities')
-                    error = 1
-                if np.any(row_avgs > 1):
-                    print('Warning: link probabilities > 1')
-                    error = 1
-            rows_error_vec.append(np.sum(self.cols_multiplicity * row_avgs) - self.r_rows_deg[i])
-        rows_error_vec = np.abs(rows_error_vec)
+            for j in range(self.r_n_cols):
+                if self.continuous_weights:
+                    multiplier = 1 / (self.r_theta_x[i] + self.r_theta_y[j])
+                elif self.weighted:
+                    xy = self.r_x[i] * self.r_y[j]
+                    multiplier = xy / (1 - xy)
+                else:
+                    xy = self.r_x[i] * self.r_y[j]
+                    multiplier = xy / (1 + xy)
+                exp_rows_sum[i] += self.cols_multiplicity[j] * multiplier
+                exp_cols_sum[j] += self.rows_multiplicity[i] * multiplier
+                if error == 0:
+                    if multiplier < 0:
+                        print('Warning: negative link probabilities')
+                        error = 1
+                    if not self.weighted:
+                        if multiplier > 1:
+                            print('Warning: link probabilities > 1')
+                            error = 1
+        if self.weighted:
+            # use mrse
+            rows_error_vec = np.abs((exp_rows_sum - self.r_rows_seq) / self.r_rows_seq)
+            cols_error_vec = np.abs((exp_cols_sum - self.r_cols_seq) / self.r_cols_seq)
+        else:
+            # use made
+            rows_error_vec = np.abs((exp_rows_sum - self.r_rows_deg))
+            cols_error_vec = np.abs((exp_cols_sum - self.r_cols_deg))
         err_rows = np.max(rows_error_vec)
         print('max rows error =', err_rows)
-        cols_error_vec = np.abs([(self.rows_multiplicity * self.r_x * self.r_y[j] / (1 + self.r_x * self.r_y[j])).sum()
-                                 - self.r_cols_deg[j] for j in range(self.r_n_cols)])
         err_cols = np.max(cols_error_vec)
         print('max columns error =', err_cols)
         tot_err = np.sum(rows_error_vec) + np.sum(cols_error_vec)
         print('total error =', tot_err)
-        if tot_err > 1:
-            error = 1
-            print('WARNING total error > 1')
-            if tot_err > 10:
-                print('total error > 10')
-        if err_rows + err_cols > 1:
-            print('max error > 1')
-            error = 1
-            if err_rows + err_cols > 10:
-                print('max error > 10')
+        max_err = np.max([err_rows, err_cols])
+        if max_err > 1e-3:
+            # error = 1
+            print('WARNING max error > 0.001')
+            # if tot_err > 10:
+            #     print('total error > 10')
+        # if err_rows + err_cols > 1:
+        #     print('max error > 1')
+        #     error = 1
+        #     if err_rows + err_cols > 10:
+        #         print('max error > 10')
         if return_error:
-            return error
+            if error == 1:
+                return error
+            else:
+                return max_err
         else:
             return
 
@@ -1876,8 +1936,10 @@ class BipartiteGraph:
         if not self.exp:
             if self.theta_x is None:
                 self.theta_x = np.zeros(self.n_rows)
+                self.theta_x[:] = np.inf
             if self.theta_y is None:
                 self.theta_y = np.zeros(self.n_cols)
+                self.theta_y[:] = np.inf
             self.r_theta_xy = solution
             self.r_theta_x = self.r_theta_xy[:self.r_n_rows]
             self.r_theta_y = self.r_theta_xy[self.r_n_rows:]
@@ -1905,7 +1967,18 @@ class BipartiteGraph:
             self.diff_seq = solution[4]
             self.alfa_seq = solution[5]
         if self.method != 'root':
-            self.loglikelihood = self.step_fun(self.solution_array)
+            if self.continuous_weights:
+                if self.exp:
+                    self.loglikelihood = mof.loglikelihood_bicwcm_exp(self.solution_array, self.args)
+                else:
+                    self.loglikelihood = mof.loglikelihood_bicwcm(self.solution_array, self.args)
+            elif self.weighted:
+                if self.exp:
+                    self.loglikelihood = mof.loglikelihood_biwcm_exp(self.solution_array, self.args)
+                else:
+                    self.loglikelihood = mof.loglikelihood_biwcm(self.solution_array, self.args)
+            else:
+                self.loglikelihood = self.step_fun(self.solution_array)
         # Reset solver lambda functions for multiprocessing compatibility
         self.hessian_regulariser = None
         self.fun = None
@@ -1993,8 +2066,18 @@ class BipartiteGraph:
         """
         self.method = method
         self.initial_guess = initial_guess
-        self.tol = tol
-        self.eps = eps
+        if tol is None:
+            self.tol = 1e-8
+            if self.weighted:
+                self.tol *= 1e-10
+        else:
+            self.tol = tol
+        if eps is None:
+            self.eps = 1e-8
+            if self.weighted:
+                self.eps *= 1e-10
+        else:
+            self.eps = tol
         self.verbose = verbose
         self.linsearch = linsearch
         self.regularise = regularise
@@ -2005,6 +2088,8 @@ class BipartiteGraph:
                 self.max_steps = 200
             else:
                 self.max_steps = 100
+            if self.weighted:
+                self.max_steps *= 1000
         else:
             self.max_steps = max_steps
 
@@ -2013,8 +2098,8 @@ class BipartiteGraph:
             method=None,
             initial_guess=None,
             light_mode=None,
-            tol=1e-8,
-            eps=1e-8,
+            tol=None,
+            eps=None,
             max_steps=None,
             verbose=False,
             linsearch=True,
@@ -2052,13 +2137,15 @@ class BipartiteGraph:
         if method is None:
             if self.continuous_weights:
                 method = 'fixed-point'
+            elif self.weighted:
+                method = 'quasinewton'
             else:
                 method = 'newton'
         if not self.is_initialized:
             print('Graph is not initialized. I can\'t compute the BiCM.')
             return
         if regularise is None:
-            if exp:
+            if self.weighted or exp:
                 regularise = False
             else:
                 regularise = True
@@ -2080,11 +2167,19 @@ class BipartiteGraph:
                 ''')
             self._solve_bicm_light()
         if print_error:
-            self.solution_converged = not bool(self._check_solution(return_error=True))
+            max_err = self._check_solution(return_error=True)
+            if max_err >= 0.001:
+                self.solution_converged = False
+            else:
+                self.solution_converged = True
             if self.solution_converged:
                 print('Solver converged.')
             else:
-                print('Solver did not converge.')
+                if max_err >= 1:
+                    print('Solver did not converge: error', max_err)
+                else:
+                    print('Solver did not converge: error {:.2f}%'.format(max_err * 100))
+            self.error = max_err
         self.is_randomized = True
 
     def solve_bicm(

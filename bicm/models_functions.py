@@ -8,6 +8,142 @@ import bicm.solver_functions as sof
 
 
 @jit(nopython=True)
+def made(xx, args):
+    """
+    Maximum Absolute Degree Error of the model. Not yet implemented
+    """
+    # TODO: implement for bicm, biwcm, bicwcm
+    return
+
+
+@jit(nopython=True)
+def mrde(xx, args):
+    """
+    Maximum Relative Degree Error of the model. Not yet implemented
+    """
+    # TODO: implement for bicm, biwcm, bicwcm
+    return
+
+
+@jit(nopython=True)
+def mase_biwcm(xx, args):
+    """
+    Maximum Absolute Strength Error of the model.
+    """
+    r_sseq_rows = args[0]
+    r_sseq_cols = args[1]
+    rows_multiplicity = args[2]
+    cols_multiplicity = args[3]
+    num_rows = len(r_sseq_rows)
+    num_cols = len(r_sseq_cols)
+    
+    orig_strength = np.concatenate((r_sseq_rows, r_sseq_cols))
+    exp_strength = np.zeros(len(orig_strength))
+    
+    xx = np.exp(- xx)
+    x = xx[:num_rows]
+    y = xx[num_rows:]
+    
+    for i in range(num_rows):
+        for j in range(num_cols):
+            xy = x[i] * y[j]
+            multiplier = xy / (1 - xy)
+            exp_strength[i] += cols_multiplicity[j] * multiplier
+            exp_strength[j + num_rows] += rows_multiplicity[i] * multiplier
+    
+    mase = (np.abs(exp_strength - orig_strength)).max()
+    return mase
+
+
+@jit(nopython=True)
+def mrse_biwcm(xx, args):
+    """
+    Maximum Relative Strength Error of the model.
+    """
+    r_sseq_rows = args[0]
+    r_sseq_cols = args[1]
+    rows_multiplicity = args[2]
+    cols_multiplicity = args[3]
+    num_rows = len(r_sseq_rows)
+    num_cols = len(r_sseq_cols)
+    
+    orig_strength = np.concatenate((r_sseq_rows, r_sseq_cols))
+    exp_strength = np.zeros(len(orig_strength))
+    
+    xx = np.exp(- xx)
+    x = xx[:num_rows]
+    y = xx[num_rows:]
+    
+    for i in range(num_rows):
+        for j in range(num_cols):
+            xy = x[i] * y[j]
+            multiplier = xy / (1 - xy)
+            exp_strength[i] += cols_multiplicity[j] * multiplier
+            exp_strength[j + num_rows] += rows_multiplicity[i] * multiplier
+    
+    mrse = (np.abs(exp_strength - orig_strength) / max(orig_strength)).max()
+    
+    return mrse
+
+
+@jit(nopython=True)
+def mase_bicwcm(xx, args):
+    """
+    Maximum Absolute Strength Error of the model.
+    """
+    r_sseq_rows = args[0]
+    r_sseq_cols = args[1]
+    rows_multiplicity = args[2]
+    cols_multiplicity = args[3]
+    num_rows = len(r_sseq_rows)
+    num_cols = len(r_sseq_cols)
+    
+    orig_strength = np.concatenate((r_sseq_rows, r_sseq_cols))
+    exp_strength = np.zeros(len(orig_strength))
+    
+    x = xx[:num_rows]
+    y = xx[num_rows:]
+    
+    for i in range(num_rows):
+        for j in range(num_cols):
+            multiplier = 1 / (x[i] + y[j])
+            exp_strength[i] += cols_multiplicity[j] * multiplier
+            exp_strength[j + num_rows] += rows_multiplicity[i] * multiplier
+    
+    mase = (np.abs(exp_strength - orig_strength)).max()
+    return mase
+
+
+@jit(nopython=True)
+def mrse_bicwcm(xx, args):
+    """
+    Maximum Relative Strength Error of the model.
+    """
+    r_sseq_rows = args[0]
+    r_sseq_cols = args[1]
+    rows_multiplicity = args[2]
+    cols_multiplicity = args[3]
+    num_rows = len(r_sseq_rows)
+    num_cols = len(r_sseq_cols)
+    
+    orig_strength = np.concatenate((r_sseq_rows, r_sseq_cols))
+    exp_strength = np.zeros(len(orig_strength))
+    
+    x = xx[:num_rows]
+    y = xx[num_rows:]
+    
+    for i in range(num_rows):
+        for j in range(num_cols):
+            multiplier = 1 / (x[i] + y[j])
+            exp_strength[i] += cols_multiplicity[j] * multiplier
+            exp_strength[j + num_rows] += rows_multiplicity[i] * multiplier
+    
+    mrse = (np.abs(exp_strength - orig_strength) / max(orig_strength)).max()
+    
+    return mrse
+
+
+@jit(nopython=True)
 def linsearch_fun_BiCM(xx, args):
     """Linsearch function for BiCM/BiWCM newton and quasinewton methods.
     The function returns the step's size, alpha.
@@ -289,6 +425,79 @@ def iterative_biwcm(x0, args):
     return ff
 
 
+# @jit(nopython=True)
+# def iterative_biwcm(x0, args):
+#     """
+#     Return the next iterative step for the Bipartite Configuration Model reduced version.
+
+#     :param numpy.ndarray x0: initial point
+#     :param list, tuple args: rows degree sequence, columns degree sequence, rows multipl., cols multipl.
+#     :returns: next iteration step
+#     :rtype: numpy.ndarray
+#     """
+#     r_sseq_rows = args[0]
+#     r_sseq_cols = args[1]
+#     rows_multiplicity = args[2]
+#     cols_multiplicity = args[3]
+#     num_rows = len(r_sseq_rows)
+#     num_cols = len(r_sseq_cols)
+#     x = x0[:num_rows]
+#     y = x0[num_rows:]
+#     x = np.exp(- x)
+#     y = np.exp(- y)
+
+#     f = np.zeros(len(x0))
+
+#     for i in range(num_rows):
+#         rows_multiplier = rows_multiplicity[i] * x[i]
+#         for j in range(num_cols):
+#             denom = 1 - x[i] * y[j]
+#             f[i] += cols_multiplicity[j] * y[j] / denom
+#             f[j + num_rows] += rows_multiplier / denom
+#     tmp = np.concatenate((r_sseq_rows, r_sseq_cols))
+#     ff = tmp / f
+#     ff = - np.log(ff)
+
+#     return ff
+
+
+@jit(nopython=True)
+def iterative_biwcm(x0, args):
+    """
+    Return the next iterative step for the Bipartite Configuration Model reduced version.
+
+    :param numpy.ndarray x0: initial point
+    :param list, tuple args: rows degree sequence, columns degree sequence, rows multipl., cols multipl.
+    :returns: next iteration step
+    :rtype: numpy.ndarray
+    """
+    r_sseq_rows = args[0]
+    r_sseq_cols = args[1]
+    rows_multiplicity = args[2]
+    cols_multiplicity = args[3]
+    num_rows = len(r_sseq_rows)
+    num_cols = len(r_sseq_cols)
+    
+    ff = x0[:]
+    x = x0[:num_rows]
+    y = x0[num_rows:]
+    x = np.exp(- x)
+    y = np.exp(- y)
+
+    f = np.zeros(len(x0))
+
+    for i in range(num_rows):
+        for j in range(num_cols):
+            xy = x[i] * y[j]
+            denom = 1 - xy
+            f[i] += cols_multiplicity[j] * xy / denom
+            f[j + num_rows] += rows_multiplicity[i] * xy / denom
+    r_sseq = np.concatenate((r_sseq_rows, r_sseq_cols))
+    ff += np.log(f / r_sseq)
+
+    return ff
+
+
 @jit(nopython=True)
 def iterative_biwcm_exp(x0, args):
     """
@@ -445,6 +654,44 @@ def loglikelihood_bicm_exp(x0, args):
         flag = False
 
     return f
+
+
+# @jit(nopython=True)
+# def loglikelihood_biwcm(x0, args):
+#     """
+#     Log-likelihood function of the reduced BiCM.
+
+#     :param numpy.ndarray x0: 1D fitnesses vector
+#     :param args: list of arguments needed for the computation
+#     :type args: list or tuple
+#     :returns: log-likelihood of the system
+#     :rtype: float
+#     """
+#     r_sseq_rows = args[0]
+#     r_sseq_cols = args[1]
+#     rows_multiplicity = args[2]
+#     cols_multiplicity = args[3]
+#     num_rows = len(r_sseq_rows)
+#     num_cols = len(r_sseq_cols)
+#     x = x0[:num_rows]
+#     y = x0[num_rows:]
+#     theta_x = np.copy(x)
+#     theta_y = np.copy(y)
+#     x = np.exp(- x)
+#     y = np.exp(- y)
+
+#     flag = True
+
+#     f = 0
+#     for i in range(num_rows):
+#         f -= rows_multiplicity[i] * r_sseq_rows[i] * theta_x[i]
+#         for j in range(num_cols):
+#             if flag:
+#                 f -= cols_multiplicity[j] * r_sseq_cols[j] * theta_y[j]
+#             f += rows_multiplicity[i] * cols_multiplicity[j] * np.log(1 - x[i] * y[j])
+#         flag = False
+
+#     return f
 
 
 @jit(nopython=True)
@@ -659,7 +906,9 @@ def loglikelihood_hessian_biwcm(x0, args):
     for h in range(num_rows):
         for i in range(num_cols):
             denom = (1 - x[h] * y[i]) ** 2
-            add = cols_multiplicity[i] * rows_multiplicity[h] * x[h] * y[i] / denom
+            add = x[h] * y[i] / denom
+            addh = cols_multiplicity[i] * add
+            addi = rows_multiplicity[h] * add
             out[h, h] -= add
             out[h, i + num_rows] = - add
             out[i + num_rows, h] = - add

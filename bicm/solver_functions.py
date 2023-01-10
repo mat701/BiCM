@@ -61,8 +61,8 @@ def sufficient_decrease_condition(
     :return: Condition validity.
     :rtype: bool
     """
-    sup = f_old + c1 * alpha * np.dot(grad_f, p.T)
-    return bool(f_new < sup)
+    # sup = f_old + c1 * alpha * np.dot(grad_f, p.T)
+    return bool(f_new < f_old)
 
 
 def solver(

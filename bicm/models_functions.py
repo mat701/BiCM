@@ -8,27 +8,217 @@ import bicm.solver_functions as sof
 
 
 @jit(nopython=True)
-def made(xx, args):
+def made_bicm(xx, args):
     """
-    Maximum Absolute Degree Error of the model. Not yet implemented
+    Maximum Absolute Degree Error of the model for BiCM.
     """
-    # TODO: implement for bicm, biwcm, bicwcm
-    return
+    r_dseq_rows = args[0]
+    r_dseq_cols = args[1]
+    rows_multiplicity = args[2]
+    cols_multiplicity = args[3]
+    num_rows = len(r_dseq_rows)
+    num_cols = len(r_dseq_cols)
+
+    orig_dseq = np.concatenate((r_dseq_rows, r_dseq_cols))
+    exp_dseq = np.zeros(len(orig_dseq))
+
+    xx = np.exp(- xx)
+    x = xx[:num_rows]
+    y = xx[num_rows:]
+
+    for i in range(num_rows):
+        for j in range(num_cols):
+            xy = x[i] * y[j]
+            multiplier = xy / (1 + xy)
+            exp_dseq[i] += cols_multiplicity[j] * multiplier
+            exp_dseq[j + num_rows] += rows_multiplicity[i] * multiplier
+
+    made = (np.abs(exp_dseq - orig_dseq)).max()
+    return made
 
 
 @jit(nopython=True)
-def mrde(xx, args):
+def made_bimcm(xx, args):
     """
-    Maximum Relative Degree Error of the model. Not yet implemented
+    Maximum Absolute Degree Error of the model for BiMCM.
     """
-    # TODO: implement for bicm, biwcm, bicwcm
-    return
+    r_dseq_rows = args[0]
+    r_dseq_cols = args[1]
+    rows_multiplicity = args[2]
+    cols_multiplicity = args[3]
+    num_rows = len(r_dseq_rows)
+    num_cols = len(r_dseq_cols)
+
+    orig_dseq = np.concatenate((r_dseq_rows, r_dseq_cols))
+    exp_dseq = np.zeros(len(orig_dseq))
+
+    xx = np.exp(- xx)
+    x = xx[:num_rows]
+    y = xx[num_rows:]
+
+    for i in range(num_rows):
+        for j in range(num_cols):
+            xy = x[i] * y[j]
+            multiplier = xy / (1 - xy)
+            exp_dseq[i] += cols_multiplicity[j] * multiplier
+            exp_dseq[j + num_rows] += rows_multiplicity[i] * multiplier
+
+    made = (np.abs(exp_dseq - orig_dseq)).max()
+    return made
+
+
+@jit(nopython=True)
+def made_biwcm(xx, args):
+    """
+    Maximum Absolute Degree Error of the model for BiWCM.
+    """
+    r_dseq_rows = args[0]
+    r_dseq_cols = args[1]
+    rows_multiplicity = args[2]
+    cols_multiplicity = args[3]
+    num_rows = len(r_dseq_rows)
+    num_cols = len(r_dseq_cols)
+
+    orig_dseq = np.concatenate((r_dseq_rows, r_dseq_cols))
+    exp_dseq = np.zeros(len(orig_dseq))
+
+    xx = np.exp(- xx)
+    x = xx[:num_rows]
+    y = xx[num_rows:]
+
+    for i in range(num_rows):
+        for j in range(num_cols):
+            multiplier = 1 / (x[i] + y[j])
+            exp_dseq[i] += cols_multiplicity[j] * multiplier
+            exp_dseq[j + num_rows] += rows_multiplicity[i] * multiplier
+
+    made = (np.abs(exp_dseq - orig_dseq)).max()
+    return made
+
+
+@jit(nopython=True)
+def mrde_bicm(xx, args):
+    """
+    Maximum Relative Degree Error of the model for BiCM.
+    """
+    r_dseq_rows = args[0]
+    r_dseq_cols = args[1]
+    rows_multiplicity = args[2]
+    cols_multiplicity = args[3]
+    num_rows = len(r_dseq_rows)
+    num_cols = len(r_dseq_cols)
+
+    orig_dseq = np.concatenate((r_dseq_rows, r_dseq_cols))
+    exp_dseq = np.zeros(len(orig_dseq))
+
+    xx = np.exp(- xx)
+    x = xx[:num_rows]
+    y = xx[num_rows:]
+
+    for i in range(num_rows):
+        for j in range(num_cols):
+            xy = x[i] * y[j]
+            multiplier = xy / (1 + xy)
+            exp_dseq[i] += cols_multiplicity[j] * multiplier
+            exp_dseq[j + num_rows] += rows_multiplicity[i] * multiplier
+
+    mrde = (np.abs(exp_dseq - orig_dseq) / orig_dseq).max()
+    return mrde
+
+
+@jit(nopython=True)
+def mrde_bimcm(xx, args):
+    """
+    Maximum Relative Degree Error of the model for BiMCM.
+    """
+    r_dseq_rows = args[0]
+    r_dseq_cols = args[1]
+    rows_multiplicity = args[2]
+    cols_multiplicity = args[3]
+    num_rows = len(r_dseq_rows)
+    num_cols = len(r_dseq_cols)
+
+    orig_dseq = np.concatenate((r_dseq_rows, r_dseq_cols))
+    exp_dseq = np.zeros(len(orig_dseq))
+
+    xx = np.exp(- xx)
+    x = xx[:num_rows]
+    y = xx[num_rows:]
+
+    for i in range(num_rows):
+        for j in range(num_cols):
+            xy = x[i] * y[j]
+            multiplier = xy / (1 - xy)
+            exp_dseq[i] += cols_multiplicity[j] * multiplier
+            exp_dseq[j + num_rows] += rows_multiplicity[i] * multiplier
+
+    mrde = (np.abs(exp_dseq - orig_dseq) / orig_dseq).max()
+    return mrde
+
+
+@jit(nopython=True)
+def mrde_biwcm(xx, args):
+    """
+    Maximum Relative Degree Error of the model for BiWCM.
+    """
+    r_dseq_rows = args[0]
+    r_dseq_cols = args[1]
+    rows_multiplicity = args[2]
+    cols_multiplicity = args[3]
+    num_rows = len(r_dseq_rows)
+    num_cols = len(r_dseq_cols)
+
+    orig_dseq = np.concatenate((r_dseq_rows, r_dseq_cols))
+    exp_dseq = np.zeros(len(orig_dseq))
+
+    xx = np.exp(- xx)
+    x = xx[:num_rows]
+    y = xx[num_rows:]
+
+    for i in range(num_rows):
+        for j in range(num_cols):
+            multiplier = 1 / (x[i] + y[j])
+            exp_dseq[i] += cols_multiplicity[j] * multiplier
+            exp_dseq[j + num_rows] += rows_multiplicity[i] * multiplier
+
+    mrde = (np.abs(exp_dseq - orig_dseq) / orig_dseq).max()
+    return mrde
+
+
+@jit(nopython=True)
+def mase_bimcm(xx, args):
+    """
+    Maximum Absolute Strength Error of the model for BiMCM.
+    """
+    r_sseq_rows = args[0]
+    r_sseq_cols = args[1]
+    rows_multiplicity = args[2]
+    cols_multiplicity = args[3]
+    num_rows = len(r_sseq_rows)
+    num_cols = len(r_sseq_cols)
+    
+    orig_strength = np.concatenate((r_sseq_rows, r_sseq_cols))
+    exp_strength = np.zeros(len(orig_strength))
+    
+    xx = np.exp(- xx)
+    x = xx[:num_rows]
+    y = xx[num_rows:]
+    
+    for i in range(num_rows):
+        for j in range(num_cols):
+            xy = x[i] * y[j]
+            multiplier = xy / (1 - xy)
+            exp_strength[i] += cols_multiplicity[j] * multiplier
+            exp_strength[j + num_rows] += rows_multiplicity[i] * multiplier
+    
+    mase = (np.abs(exp_strength - orig_strength)).max()
+    return mase
 
 
 @jit(nopython=True)
 def mase_biwcm(xx, args):
     """
-    Maximum Absolute Strength Error of the model.
+    Maximum Absolute Strength Error of the model for BiWCM.
     """
     r_sseq_rows = args[0]
     r_sseq_cols = args[1]
@@ -40,56 +230,54 @@ def mase_biwcm(xx, args):
     orig_strength = np.concatenate((r_sseq_rows, r_sseq_cols))
     exp_strength = np.zeros(len(orig_strength))
     
-    xx = np.exp(- xx)
     x = xx[:num_rows]
     y = xx[num_rows:]
     
+    for i in range(num_rows):
+        for j in range(num_cols):
+            multiplier = 1 / (x[i] + y[j])
+            exp_strength[i] += cols_multiplicity[j] * multiplier
+            exp_strength[j + num_rows] += rows_multiplicity[i] * multiplier
+    
+    mase = (np.abs(exp_strength - orig_strength)).max()
+    return mase
+
+
+@jit(nopython=True)
+def mrse_bimcm(xx, args):
+    """
+    Maximum Relative Strength Error of the model for BiMCM.
+    """
+    r_sseq_rows = args[0]
+    r_sseq_cols = args[1]
+    rows_multiplicity = args[2]
+    cols_multiplicity = args[3]
+    num_rows = len(r_sseq_rows)
+    num_cols = len(r_sseq_cols)
+
+    orig_strength = np.concatenate((r_sseq_rows, r_sseq_cols))
+    exp_strength = np.zeros(len(orig_strength))
+
+    xx = np.exp(- xx)
+    x = xx[:num_rows]
+    y = xx[num_rows:]
+
     for i in range(num_rows):
         for j in range(num_cols):
             xy = x[i] * y[j]
             multiplier = xy / (1 - xy)
             exp_strength[i] += cols_multiplicity[j] * multiplier
             exp_strength[j + num_rows] += rows_multiplicity[i] * multiplier
-    
-    mase = (np.abs(exp_strength - orig_strength)).max()
-    return mase
+
+    mrse = (np.abs(exp_strength - orig_strength) / orig_strength).max()
+
+    return mrse
 
 
 @jit(nopython=True)
 def mrse_biwcm(xx, args):
     """
-    Maximum Relative Strength Error of the model.
-    """
-    r_sseq_rows = args[0]
-    r_sseq_cols = args[1]
-    rows_multiplicity = args[2]
-    cols_multiplicity = args[3]
-    num_rows = len(r_sseq_rows)
-    num_cols = len(r_sseq_cols)
-    
-    orig_strength = np.concatenate((r_sseq_rows, r_sseq_cols))
-    exp_strength = np.zeros(len(orig_strength))
-    
-    xx = np.exp(- xx)
-    x = xx[:num_rows]
-    y = xx[num_rows:]
-    
-    for i in range(num_rows):
-        for j in range(num_cols):
-            xy = x[i] * y[j]
-            multiplier = xy / (1 - xy)
-            exp_strength[i] += cols_multiplicity[j] * multiplier
-            exp_strength[j + num_rows] += rows_multiplicity[i] * multiplier
-    
-    mrse = (np.abs(exp_strength - orig_strength) / max(orig_strength)).max()
-    
-    return mrse
-
-
-@jit(nopython=True)
-def mase_bicwcm(xx, args):
-    """
-    Maximum Absolute Strength Error of the model.
+    Maximum Relative Strength Error of the model for BiWCM.
     """
     r_sseq_rows = args[0]
     r_sseq_cols = args[1]
@@ -110,42 +298,14 @@ def mase_bicwcm(xx, args):
             exp_strength[i] += cols_multiplicity[j] * multiplier
             exp_strength[j + num_rows] += rows_multiplicity[i] * multiplier
     
-    mase = (np.abs(exp_strength - orig_strength)).max()
-    return mase
-
-
-@jit(nopython=True)
-def mrse_bicwcm(xx, args):
-    """
-    Maximum Relative Strength Error of the model.
-    """
-    r_sseq_rows = args[0]
-    r_sseq_cols = args[1]
-    rows_multiplicity = args[2]
-    cols_multiplicity = args[3]
-    num_rows = len(r_sseq_rows)
-    num_cols = len(r_sseq_cols)
-    
-    orig_strength = np.concatenate((r_sseq_rows, r_sseq_cols))
-    exp_strength = np.zeros(len(orig_strength))
-    
-    x = xx[:num_rows]
-    y = xx[num_rows:]
-    
-    for i in range(num_rows):
-        for j in range(num_cols):
-            multiplier = 1 / (x[i] + y[j])
-            exp_strength[i] += cols_multiplicity[j] * multiplier
-            exp_strength[j + num_rows] += rows_multiplicity[i] * multiplier
-    
-    mrse = (np.abs(exp_strength - orig_strength) / max(orig_strength)).max()
+    mrse = (np.abs(exp_strength - orig_strength) / orig_strength).max()
     
     return mrse
 
 
 @jit(nopython=True)
 def linsearch_fun_BiCM(xx, args):
-    """Linsearch function for BiCM/BiWCM newton and quasinewton methods.
+    """Linsearch function for BiCM/BiMCM newton and quasinewton methods.
     The function returns the step's size, alpha.
     Alpha determines how much to move on the descending direction
     found by the algorithm.
@@ -390,7 +550,7 @@ def iterative_bicm_exp(x0, args):
 
 
 @jit(nopython=True)
-def iterative_biwcm(x0, args):
+def iterative_bimcm(x0, args):
     """
     Return the next iterative step for the Bipartite Configuration Model reduced version.
 
@@ -426,7 +586,7 @@ def iterative_biwcm(x0, args):
 
 
 # @jit(nopython=True)
-# def iterative_biwcm(x0, args):
+# def iterative_bimcm(x0, args):
 #     """
 #     Return the next iterative step for the Bipartite Configuration Model reduced version.
 
@@ -462,7 +622,7 @@ def iterative_biwcm(x0, args):
 
 
 @jit(nopython=True)
-def iterative_biwcm(x0, args):
+def iterative_bimcm(x0, args):
     """
     Return the next iterative step for the Bipartite Configuration Model reduced version.
 
@@ -499,7 +659,7 @@ def iterative_biwcm(x0, args):
 
 
 @jit(nopython=True)
-def iterative_biwcm_exp(x0, args):
+def iterative_bimcm_exp(x0, args):
     """
     Return the next iterative step for the Bipartite Configuration Model reduced version.
 
@@ -532,7 +692,7 @@ def iterative_biwcm_exp(x0, args):
 
 
 @jit(nopython=True)
-def iterative_bicwcm(x0, args):
+def iterative_biwcm(x0, args):
     """
     Return the next iterative step for the Bipartite Configuration Model reduced version.
 
@@ -657,7 +817,7 @@ def loglikelihood_bicm_exp(x0, args):
 
 
 # @jit(nopython=True)
-# def loglikelihood_biwcm(x0, args):
+# def loglikelihood_bimcm(x0, args):
 #     """
 #     Log-likelihood function of the reduced BiCM.
 
@@ -695,7 +855,7 @@ def loglikelihood_bicm_exp(x0, args):
 
 
 @jit(nopython=True)
-def loglikelihood_biwcm(x0, args):
+def loglikelihood_bimcm(x0, args):
     """
     Log-likelihood function of the reduced BiCM.
 
@@ -733,7 +893,7 @@ def loglikelihood_biwcm(x0, args):
 
 
 @jit(nopython=True)
-def loglikelihood_biwcm_exp(x0, args):
+def loglikelihood_bimcm_exp(x0, args):
     """
     Log-likelihood function of the reduced BiCM.
 
@@ -768,9 +928,9 @@ def loglikelihood_biwcm_exp(x0, args):
 
 
 @jit(nopython=True)
-def loglikelihood_bicwcm(x0, args):
+def loglikelihood_biwcm(x0, args):
     """
-    Log-likelihood function of the reduced BiCWCM.
+    Log-likelihood function of the reduced BiWCM.
 
     :param numpy.ndarray x0: 1D fitnesses vector
     :param args: list of arguments needed for the computation
@@ -880,9 +1040,9 @@ def loglikelihood_hessian_bicm_exp(x0, args):
 
 
 @jit(nopython=True)
-def loglikelihood_hessian_biwcm(x0, args):
+def loglikelihood_hessian_bimcm(x0, args):
     """
-    Log-likelihood hessian of the reduced BiWCM.
+    Log-likelihood hessian of the reduced BiMCM.
 
     :param numpy.ndarray x0: 1D fitnesses vector
     :param args: list of arguments needed for the computation
@@ -907,18 +1067,18 @@ def loglikelihood_hessian_biwcm(x0, args):
         for i in range(num_cols):
             denom = (1 - x[h] * y[i]) ** 2
             add = x[h] * y[i] / denom
-            addh = cols_multiplicity[i] * add
-            addi = rows_multiplicity[h] * add
-            out[h, h] -= add
+            add_h = cols_multiplicity[i] * add
+            add_i = rows_multiplicity[h] * add
+            out[h, h] -= add_h
             out[h, i + num_rows] = - add
             out[i + num_rows, h] = - add
-            out[i + num_rows, i + num_rows] -= add
+            out[i + num_rows, i + num_rows] -= add_i
 
     return out
 
 
 @jit(nopython=True)
-def loglikelihood_hessian_biwcm_exp(x0, args):  # To be implemented
+def loglikelihood_hessian_bimcm_exp(x0, args):  # To be implemented
     """
     Log-likelihood hessian of the reduced BiCM.
 
@@ -960,9 +1120,9 @@ def loglikelihood_hessian_biwcm_exp(x0, args):  # To be implemented
 
 
 @jit(nopython=True)
-def loglikelihood_hessian_bicwcm(x0, args):
+def loglikelihood_hessian_biwcm(x0, args):
     """
-    Log-likelihood hessian of the reduced BiCWCM.
+    Log-likelihood hessian of the reduced BiWCM.
 
     :param numpy.ndarray x0: 1D fitnesses vector
     :param args: list of arguments needed for the computation
@@ -1065,9 +1225,9 @@ def loglikelihood_hessian_diag_bicm_exp(x0, args):
 
 
 @jit(nopython=True)
-def loglikelihood_hessian_diag_biwcm(x0, args):
+def loglikelihood_hessian_diag_bimcm(x0, args):
     """
-    Log-likelihood diagonal hessian of the reduced BiWCM.
+    Log-likelihood diagonal hessian of the reduced BiMCM.
 
     :param numpy.ndarray x0: 1D fitnesses vector
     :param args: list of arguments needed for the computation
@@ -1090,18 +1250,20 @@ def loglikelihood_hessian_diag_biwcm(x0, args):
 
     for i in range(num_rows):
         for j in range(num_cols):
-            denom = (1 - x[i] * y[j]) ** 2
-            add = cols_multiplicity[j] * rows_multiplicity[i] * x[i] * y[j] / denom
-            f[i] -= add
-            f[j + num_rows] -= add
+            xy = (x[i] * y[j])
+            mult = xy / ((1 - xy) ** 2)
+            addi = cols_multiplicity[j] * mult
+            addj = rows_multiplicity[i] * mult
+            f[i] -= addi
+            f[j + num_rows] -= addj
 
     return f
 
 
 @jit(nopython=True)
-def loglikelihood_hessian_diag_biwcm_exp(x0, args):  # To be implemented
+def loglikelihood_hessian_diag_bimcm_exp(x0, args):  # To be implemented
     """
-    Log-likelihood diagonal hessian of the reduced BiWCM.
+    Log-likelihood diagonal hessian of the reduced BiMCM.
 
     :param numpy.ndarray x0: 1D fitnesses vector
     :param args: list of arguments needed for the computation
@@ -1137,9 +1299,9 @@ def loglikelihood_hessian_diag_biwcm_exp(x0, args):  # To be implemented
 
 
 @jit(nopython=True)
-def loglikelihood_hessian_diag_bicwcm(x0, args):
+def loglikelihood_hessian_diag_biwcm(x0, args):
     """
-    Log-likelihood hessian of the reduced BiCWCM.
+    Log-likelihood hessian of the reduced BiWCM.
 
     :param numpy.ndarray x0: 1D fitnesses vector
     :param args: list of arguments needed for the computation
@@ -1245,9 +1407,9 @@ def loglikelihood_prime_bicm_exp(x0, args):
 
 
 @jit(nopython=True)
-def loglikelihood_prime_biwcm(x0, args):
+def loglikelihood_prime_bimcm(x0, args):
     """
-    Iterative function for loglikelihood gradient BiWCM.
+    Iterative function for loglikelihood gradient BiMCM.
 
     :param x0: fitnesses vector
     :type x0: numpy.array
@@ -1285,9 +1447,9 @@ def loglikelihood_prime_biwcm(x0, args):
 
 
 @jit(nopython=True)
-def loglikelihood_prime_biwcm_exp(x0, args):  # To be implemented
+def loglikelihood_prime_bimcm_exp(x0, args):  # To be implemented
     """
-    Iterative function for loglikelihood gradient BiWCM.
+    Iterative function for loglikelihood gradient BiMCM.
 
     :param x0: fitnesses vector
     :type x0: numpy.array
@@ -1322,9 +1484,9 @@ def loglikelihood_prime_biwcm_exp(x0, args):  # To be implemented
 
 
 @jit(nopython=True)
-def loglikelihood_prime_bicwcm(x0, args):
+def loglikelihood_prime_biwcm(x0, args):
     """
-    Iterative function for loglikelihood gradient BiCWCM.
+    Iterative function for loglikelihood gradient BiWCM.
 
     :param x0: fitnesses vector
     :type x0: numpy.array
@@ -1358,21 +1520,21 @@ def loglikelihood_prime_bicwcm(x0, args):
     return f
 
 
-def loglikelihood_prime_bicwcm_exp(x, args):  # To be implemented
+def loglikelihood_prime_biwcm_exp(x, args):  # To be implemented
     return None
 
 
-def iterative_bicwcm_exp(x, args):  # To be implemented
+def iterative_biwcm_exp(x, args):  # To be implemented
     return None
 
 
-def loglikelihood_hessian_bicwcm_exp(x, args):  # To be implemented
+def loglikelihood_hessian_biwcm_exp(x, args):  # To be implemented
     return None
 
 
-def loglikelihood_hessian_diag_bicwcm_exp(x, args):  # To be implemented
+def loglikelihood_hessian_diag_biwcm_exp(x, args):  # To be implemented
     return None
 
 
-def loglikelihood_bicwcm_exp(x, args):  # To be implemented
+def loglikelihood_biwcm_exp(x, args):  # To be implemented
     return None

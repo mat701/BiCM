@@ -16,5 +16,5 @@ Author: Matteo Bruno
 from .network_functions import *
 from .graph_classes import *
 
-__version__ = "2.0.4"
-__author__ = """Matteo Bruno (matteo.bruno@imtlucca.it)"""
+__version__ = "3.0.0"
+__author__ = """Matteo Bruno (matteobruno180@gmail.com)"""

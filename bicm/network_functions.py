@@ -26,9 +26,9 @@ def bicm_from_fitnesses(x, y):
 
 
 @jit(nopython=True)
-def biwcm_from_fitnesses(x, y):
+def bimcm_from_fitnesses(x, y):
     """
-    Rebuilds the average probability matrix of the biwcm from the fitnesses
+    Rebuilds the average probability matrix of the BiMCM from the fitnesses
 
     :param x: the fitness vector of the rows layer
     :type x: numpy.ndarray
@@ -44,9 +44,9 @@ def biwcm_from_fitnesses(x, y):
 
 
 @jit(nopython=True)
-def bicwcm_from_fitnesses(x, y):
+def biwcm_from_fitnesses(x, y):
     """
-    Rebuilds the average probability matrix of the bicwcm from the fitnesses
+    Rebuilds the average probability matrix of the BiWCM from the fitnesses
 
     :param x: the fitness vector of the rows layer
     :type x: numpy.ndarray

@@ -120,14 +120,14 @@ def edgelist_from_biadjacency(biadjacency):
         coords = biadjacency.nonzero()
         if np.sum(biadjacency.data != 1) > 0:
             raise ValueError('Only binary matrices')
-        return np.array(list(zip(coords[0], coords[1])), dtype=np.dtype([('rows', int), ('columns', int)])),\
-               np.array(biadjacency.sum(1)).flatten(), np.array(biadjacency.sum(0)).flatten()
+        return np.array(list(zip(coords[0], coords[1])), dtype=np.dtype([('rows', int), ('columns', int)])), \
+            np.array(biadjacency.sum(1)).flatten(), np.array(biadjacency.sum(0)).flatten()
     else:
         if np.sum(biadjacency[biadjacency != 0] != 1) > 0:
             raise ValueError('Only binary matrices')
         return np.array(edgelist_from_biadjacency_fast(biadjacency),
-                        dtype=np.dtype([('rows', int), ('columns', int)])),\
-               np.sum(biadjacency, axis=1), np.sum(biadjacency, axis=0)
+                        dtype=np.dtype([('rows', int), ('columns', int)])), \
+            np.sum(biadjacency, axis=1), np.sum(biadjacency, axis=0)
 
 
 def biadjacency_from_edgelist(edgelist, fmt='array'):
@@ -175,10 +175,14 @@ def adjacency_list_from_edgelist_bipartite(edgelist, convert_type=True):
     """
     Creates the adjacency list from the edgelist.
     Method for bipartite networks.
-    Returns two dictionaries, each containing an adjacency list with the rows as keys and the columns as keys, respectively.
+    Returns two dictionaries containing an adjacency list with the rows as keys and the columns as keys, respectively.
     If convert_type is True (default), then the nodes are enumerated and the adjacency list is returned as integers.
     Returns also two dictionaries that keep track of the nodes and the two degree sequences.
     """
+    rows_degs = None
+    cols_degs = None
+    rows_dict = None
+    cols_dict = None
     if convert_type:
         edgelist, rows_degs, cols_degs, rows_dict, cols_dict = edgelist_from_edgelist_bipartite(edgelist)
     adj_list = {}
@@ -204,7 +208,7 @@ def adjacency_list_from_adjacency_list_bipartite(old_adj_list):
     Returns also two dictionaries that keep track of the nodes and the two degree sequences.
     """
     rows_dict = dict(enumerate(np.unique(list(old_adj_list.keys()))))
-    cols_dict = dict(enumerate(np.unique([el for l in old_adj_list.values() for el in l])))
+    cols_dict = dict(enumerate(np.unique([el for lst in old_adj_list.values() for el in lst])))
     inv_rows_dict = {v: k for k, v in rows_dict.items()}
     inv_cols_dict = {v: k for k, v in cols_dict.items()}
     adj_list = {}

@@ -20,6 +20,8 @@ if system() != 'Windows':
     from multiprocessing import Pool
 
 
+
+
 class BipartiteGraph:
     """Bipartite Graph class for undirected binary bipartite networks.
 
@@ -938,8 +940,8 @@ class BipartiteGraph:
         if method is None:
             if self.continuous_weights:
                 method = 'fixed-point'
-            elif self.weighted:
-                method = 'quasinewton'
+            # elif self.weighted:
+            #     method = 'quasinewton'
             else:
                 method = 'newton'
         if not self.is_initialized:

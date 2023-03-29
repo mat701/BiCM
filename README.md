@@ -62,12 +62,23 @@ See a more detailed walkthrough in **tests/bicm_tests** notebook or python scrip
 
 If you use the `bicm` module, please cite its location on Github
 [https://github.com/mat701/BiCM](https://github.com/mat701/BiCM) and the
-original articles \[Vallarano2021\], \[Saracco2015\] and \[Saracco2017\].
+original articles [Vallarano2021], [Saracco2015] and [Saracco2017].
+
+If you use the weighted models BiWCM or BiMCM you might consider citing also the following paper introducing the solvers of this package:
+
+* Bruno, M., Mazzilli, D., Patelli, A., Squartini, T., and Saracco, F. \
+    *Revealing Comparative Advantage via entropy maximization.* \
+    In preparation
 
 ### References
 
-\[Vallarano2021] [N. Vallarano, M. Bruno, E. Marchese, G. Trapani, F. Saracco, T. Squartini, G. Cimini, M. Zanon, Fast and scalable likelihood maximization for Exponential Random Graph Models, Preprint](https://arxiv.org/abs/2101.12625)
+[Vallarano2021] [N. Vallarano, M. Bruno, E. Marchese, G. Trapani, F. Saracco, T. Squartini, G. Cimini, M. Zanon, Fast and scalable likelihood maximization for Exponential Random Graph Models with local constraints, Nature Scientific Reports](https://doi.org/10.1038/s41598-021-93830-4)
 
-\[Saracco2015\] [F. Saracco, R. Di Clemente, A. Gabrielli, T. Squartini, Randomizing bipartite networks: the case of the World Trade Web, Scientific Reports 5, 10595 (2015)](http://www.nature.com/articles/srep10595).
+[Saracco2015] [F. Saracco, R. Di Clemente, A. Gabrielli, T. Squartini, Randomizing bipartite networks: the case of the World Trade Web, Scientific Reports 5, 10595 (2015)](http://www.nature.com/articles/srep10595).
 
-\[Saracco2017\] [F. Saracco, M. J. Straka, R. Di Clemente, A. Gabrielli, G. Caldarelli, and T. Squartini, Inferring monopartite projections of bipartite networks: an entropy-based approach, New J. Phys. 19, 053022 (2017)](http://stacks.iop.org/1367-2630/19/i=5/a=053022)
+[Saracco2017] [F. Saracco, M. J. Straka, R. Di Clemente, A. Gabrielli, G. Caldarelli, and T. Squartini, Inferring monopartite projections of bipartite networks: an entropy-based approach, New J. Phys. 19, 053022 (2017)](http://stacks.iop.org/1367-2630/19/i=5/a=053022)
+
+
+_Author_:
+
+[Matteo Bruno](https://csl.sony.it/member/matteo-bruno/) (BiCM) (a.k.a. [mat701](https://github.com/mat701))

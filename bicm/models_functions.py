@@ -326,12 +326,6 @@ def linsearch_fun_BiCM(xx, args):
     step_fun = args[0]
     arg_step_fun = args[1]
 
-    # eps2 = 1e-2
-    # alfa0 = (eps2 - 1) * x / dx
-    # for a in alfa0:
-    #     if a >= 0:
-    #         alfa = min(alfa, a)
-
     i = 0
     s_old = -step_fun(x, arg_step_fun)
     while (
@@ -547,78 +541,6 @@ def iterative_bicm_exp(x0, args):
     ff = tmp / f
 
     return ff
-
-
-@jit(nopython=True)
-def iterative_bimcm(x0, args):
-    """
-    Return the next iterative step for the Bipartite Configuration Model reduced version.
-
-    :param numpy.ndarray x0: initial point
-    :param list, tuple args: rows degree sequence, columns degree sequence, rows multipl., cols multipl.
-    :returns: next iteration step
-    :rtype: numpy.ndarray
-    """
-    r_sseq_rows = args[0]
-    r_sseq_cols = args[1]
-    rows_multiplicity = args[2]
-    cols_multiplicity = args[3]
-    num_rows = len(r_sseq_rows)
-    num_cols = len(r_sseq_cols)
-    x = x0[:num_rows]
-    y = x0[num_rows:]
-    x = np.exp(- x)
-    y = np.exp(- y)
-
-    f = np.zeros(len(x0))
-
-    for i in range(num_rows):
-        rows_multiplier = rows_multiplicity[i] * x[i]
-        for j in range(num_cols):
-            denom = 1 - x[i] * y[j]
-            f[i] += cols_multiplicity[j] * y[j] / denom
-            f[j + num_rows] += rows_multiplier / denom
-    tmp = np.concatenate((r_sseq_rows, r_sseq_cols))
-    ff = tmp / f
-    ff = - np.log(ff)
-
-    return ff
-
-
-# @jit(nopython=True)
-# def iterative_bimcm(x0, args):
-#     """
-#     Return the next iterative step for the Bipartite Configuration Model reduced version.
-
-#     :param numpy.ndarray x0: initial point
-#     :param list, tuple args: rows degree sequence, columns degree sequence, rows multipl., cols multipl.
-#     :returns: next iteration step
-#     :rtype: numpy.ndarray
-#     """
-#     r_sseq_rows = args[0]
-#     r_sseq_cols = args[1]
-#     rows_multiplicity = args[2]
-#     cols_multiplicity = args[3]
-#     num_rows = len(r_sseq_rows)
-#     num_cols = len(r_sseq_cols)
-#     x = x0[:num_rows]
-#     y = x0[num_rows:]
-#     x = np.exp(- x)
-#     y = np.exp(- y)
-
-#     f = np.zeros(len(x0))
-
-#     for i in range(num_rows):
-#         rows_multiplier = rows_multiplicity[i] * x[i]
-#         for j in range(num_cols):
-#             denom = 1 - x[i] * y[j]
-#             f[i] += cols_multiplicity[j] * y[j] / denom
-#             f[j + num_rows] += rows_multiplier / denom
-#     tmp = np.concatenate((r_sseq_rows, r_sseq_cols))
-#     ff = tmp / f
-#     ff = - np.log(ff)
-
-#     return ff
 
 
 @jit(nopython=True)
@@ -1520,21 +1442,36 @@ def loglikelihood_prime_biwcm(x0, args):
     return f
 
 
-def loglikelihood_prime_biwcm_exp(x, args):  # To be implemented
+def loglikelihood_prime_biwcm_exp(x, args):
+    """
+    To be implemented
+    """
     return None
 
 
-def iterative_biwcm_exp(x, args):  # To be implemented
+def iterative_biwcm_exp(x, args):
+    """
+    To be implemented
+    """
     return None
 
 
-def loglikelihood_hessian_biwcm_exp(x, args):  # To be implemented
+def loglikelihood_hessian_biwcm_exp(x, args):
+    """
+    To be implemented
+    """
     return None
 
 
-def loglikelihood_hessian_diag_biwcm_exp(x, args):  # To be implemented
+def loglikelihood_hessian_diag_biwcm_exp(x, args):
+    """
+    To be implemented
+    """
     return None
 
 
-def loglikelihood_biwcm_exp(x, args):  # To be implemented
+def loglikelihood_biwcm_exp(x, args):
+    """
+    To be implemented
+    """
     return None

@@ -8,6 +8,7 @@ import time
 def matrix_regulariser_function(b, eps):
     """Trasforms input matrix in a positive defined matrix
     by adding positive quantites to the main diagonal.
+
     :param b: Matrix.
     :type b: numpy.ndarray
     :param eps: Positive quantity to add.
@@ -24,6 +25,7 @@ def matrix_regulariser_function(b, eps):
 def matrix_regulariser_function_eigen_based(b, eps):
     """Trasform input matrix in a positive defined matrix
     by regularising eigenvalues.
+
     :param b: Matrix.
     :type b: numpy.ndarray
     :param eps: Positive quantity to add.
@@ -44,6 +46,7 @@ def sufficient_decrease_condition(
     f_old, f_new, alpha, grad_f, p, c1=1e-04, c2=0.9
 ):
     """Returns True if upper wolfe condition is respected.
+
     :param f_old: Function value at previous iteration.
     :type f_old: float
     :param f_new: Function value at current iteration.
@@ -61,8 +64,8 @@ def sufficient_decrease_condition(
     :return: Condition validity.
     :rtype: bool
     """
-    # sup = f_old + c1 * alpha * np.dot(grad_f, p.T)
-    return bool(f_new < f_old)
+    sup = f_old + c1 * alpha * np.dot(grad_f, p.T)
+    return bool(f_new < sup)
 
 
 def solver(
@@ -84,6 +87,7 @@ def solver(
 ):
     """Find roots of eq. fun = 0, using newton, quasinewton or
     fixed-point algorithm.
+
     :param x0: Initial point
     :type x0: numpy.ndarray
     :param fun: Function handle of the function to find the roots of.

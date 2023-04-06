@@ -55,8 +55,10 @@ To get the rows or columns projection of the graph:
 Alternatively, to customize the projection:
 
     myGraph.compute_projection(rows=True, alpha=0.05, method='poisson', threads_num=4, progress_bar=True)
+    
+Now version 3.0.0 is online, and you can use the package with weighted networks as well!
 
-See a more detailed walkthrough in **tests/bicm_tests** notebook or python script, or check out the API in the documentation.
+See a more detailed walkthrough in **tests/bicm_test** or **tests/biwcm_test** notebooks, or check out the API in the documentation.
 
 ## How to cite
 

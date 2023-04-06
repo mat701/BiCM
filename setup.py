@@ -26,6 +26,7 @@ setuptools.setup(
     install_requires=[
                       "numpy>=1.14",
                       "scipy>=1.4",
-                      "tqdm>=4.52.0"
+                      "tqdm>=4.52.0",
+                      "numba>=0.52.0"
                       ],
 )

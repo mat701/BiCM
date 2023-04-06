@@ -94,6 +94,8 @@ class BipartiteGraph:
         self.threads_num = 1
         self.rows_pvals = None
         self.cols_pvals = None
+        self.rows_pvals_mat = None
+        self.cols_pvals_mat = None
         self.is_rows_projected = False
         self.is_cols_projected = False
         self.initial_guess = None
@@ -1239,17 +1241,38 @@ class BipartiteGraph:
                 self.is_cols_projected = True
                 
     def compute_weighted_pvals_mat(self):
+        """
+        Compute the pvalues matrix representing the significance of the original matrix.
+        """
+        if self.biadjacency is None:
+            assert self.edgelist is not None or self.adj_list is not None, 'Graph links must be given in some format!'
+            print('Computing biadjacency matrix...')
+            if self.edgelist is not None:
+                self.biadjacency = nef.biadjacency_from_edgelist(self.edgelist)[0]
+            elif self.adj_list is not None:
+                self.biadjacency = nef.biadjacency_from_adjacency_list(self.adj_list)
         if not self.is_randomized:
             print('First I have to compute the BiCM. Computing...')
             self.solve_tool()
+        if not self.weighted:
+            self.pvals_mat = self.avg_mat ** self.biadjacency
         self.pvals_mat = (np.tile(self.x, (len(self.y), 1)).T * np.tile(self.y, (len(self.x), 1))) ** self.biadjacency
 
     def get_weighted_pvals_mat(self):
+        """
+        Return the pvalues matrix representing the significance of the original matrix.
+        """
         if self.pvals_mat is None:
             self.compute_weighted_pvals_mat()
         return self.pvals_mat
 
-    def get_rca_validated_matrix(self, significance=0.01):
+    def get_validated_matrix(self, significance=0.01):
+        """
+        Extract a backbone of the original network keeping only the most significant links.
+        At the moment this method only applies a global significance level for any link.
+
+        :param float significance:  Threshold for the pvalues significance.
+        """
         if self.pvals_mat is None:
             self.compute_weighted_pvals_mat()
         return (self.pvals_mat < significance).astype(np.ubyte)
@@ -1363,6 +1386,55 @@ class BipartiteGraph:
             return adj_list_to_return
         elif fmt == 'edgelist':
             return nef.edgelist_from_adjacency_list_bipartite(adj_list_to_return)
+        
+    def _compute_projected_pvals_mat(self, layer='rows'):
+        """
+        Compute the pvalues matrix representing the significance of the original matrix.
+        """
+        if layer == 'rows':
+            n_dim = self.n_rows
+            pval_adjlist = self.rows_pvals
+        elif layer == 'columns':
+            n_dim = self.n_cols
+            pval_adjlist = self.cols_pvals
+        pval_mat = np.ones((n_dim, n_dim))
+        for v in pval_adjlist:
+            for w in pval_adjlist[v]:
+                pval_mat[v,w] = pval_adjlist[v][w]
+                pval_mat[w,v] = pval_mat[v,w]
+        if layer == 'rows':
+            self.rows_pvals_mat = pval_mat
+        elif layer == 'columns':
+            self.cols_pvals_mat = pval_mat
+
+    def get_projected_pvals_mat(self, layer=None):
+        """
+        Return the pvalues matrix of the projection if it has been computed.
+        
+        :param layer: the layer to return.
+        :type layer: string, optional
+        """
+        if layer is None:
+            if not self.is_rows_projected and not self.is_cols_projected:
+                print('First compute a projection.')
+                return None
+            elif self.is_rows_projected and self.is_cols_projected:
+                print("Please specify the layer with layer='rows' or layer='columns'.")
+                return None
+            elif self.is_rows_projected:
+                layer = 'rows'
+            elif self.is_cols_projected:
+                layer = 'columns'
+        if layer == 'rows':
+            if self.rows_pvals_mat is None:
+                self._compute_projected_pvals_mat(layer=layer)
+            return self.rows_pvals_mat
+        elif layer == 'columns':
+            if self.cols_pvals_mat is None:
+                self._compute_projected_pvals_mat(layer=layer)
+            return self.cols_pvals_mat
+        else:
+            raise ValueError("layer must be either 'rows' or 'columns' or None")
 
     def set_biadjacency_matrix(self, biadjacency):
         """Set the biadjacency matrix of the graph.

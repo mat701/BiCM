@@ -38,9 +38,9 @@ def made_bicm(xx, args):
 
 
 @jit(nopython=True)
-def made_bimcm(xx, args):
+def made_biwcm_d(xx, args):
     """
-    Maximum Absolute Degree Error of the model for BiMCM.
+    Maximum Absolute Degree Error of the model for BiWCM_d.
     """
     r_dseq_rows = args[0]
     r_dseq_cols = args[1]
@@ -68,9 +68,9 @@ def made_bimcm(xx, args):
 
 
 @jit(nopython=True)
-def made_biwcm(xx, args):
+def made_biwcm_c(xx, args):
     """
-    Maximum Absolute Degree Error of the model for BiWCM.
+    Maximum Absolute Degree Error of the model for BiWCM_c.
     """
     r_dseq_rows = args[0]
     r_dseq_cols = args[1]
@@ -127,9 +127,9 @@ def mrde_bicm(xx, args):
 
 
 @jit(nopython=True)
-def mrde_bimcm(xx, args):
+def mrde_biwcm_d(xx, args):
     """
-    Maximum Relative Degree Error of the model for BiMCM.
+    Maximum Relative Degree Error of the model for BiWCM_d.
     """
     r_dseq_rows = args[0]
     r_dseq_cols = args[1]
@@ -157,9 +157,9 @@ def mrde_bimcm(xx, args):
 
 
 @jit(nopython=True)
-def mrde_biwcm(xx, args):
+def mrde_biwcm_c(xx, args):
     """
-    Maximum Relative Degree Error of the model for BiWCM.
+    Maximum Relative Degree Error of the model for BiWCM_c.
     """
     r_dseq_rows = args[0]
     r_dseq_cols = args[1]
@@ -186,9 +186,9 @@ def mrde_biwcm(xx, args):
 
 
 @jit(nopython=True)
-def mase_bimcm(xx, args):
+def mase_biwcm_d(xx, args):
     """
-    Maximum Absolute Strength Error of the model for BiMCM.
+    Maximum Absolute Strength Error of the model for BiWCM_d.
     """
     r_sseq_rows = args[0]
     r_sseq_cols = args[1]
@@ -216,9 +216,9 @@ def mase_bimcm(xx, args):
 
 
 @jit(nopython=True)
-def mase_biwcm(xx, args):
+def mase_biwcm_c(xx, args):
     """
-    Maximum Absolute Strength Error of the model for BiWCM.
+    Maximum Absolute Strength Error of the model for BiWCM_c.
     """
     r_sseq_rows = args[0]
     r_sseq_cols = args[1]
@@ -244,9 +244,9 @@ def mase_biwcm(xx, args):
 
 
 @jit(nopython=True)
-def mrse_bimcm(xx, args):
+def mrse_biwcm_d(xx, args):
     """
-    Maximum Relative Strength Error of the model for BiMCM.
+    Maximum Relative Strength Error of the model for BiWCM_d.
     """
     r_sseq_rows = args[0]
     r_sseq_cols = args[1]
@@ -275,9 +275,9 @@ def mrse_bimcm(xx, args):
 
 
 @jit(nopython=True)
-def mrse_biwcm(xx, args):
+def mrse_biwcm_c(xx, args):
     """
-    Maximum Relative Strength Error of the model for BiWCM.
+    Maximum Relative Strength Error of the model for BiWCM_c.
     """
     r_sseq_rows = args[0]
     r_sseq_cols = args[1]
@@ -305,7 +305,7 @@ def mrse_biwcm(xx, args):
 
 @jit(nopython=True)
 def linsearch_fun_BiCM(xx, args):
-    """Linsearch function for BiCM/BiMCM newton and quasinewton methods.
+    """Linsearch function for BiCM/BiWCM_d newton and quasinewton methods.
     The function returns the step's size, alpha.
     Alpha determines how much to move on the descending direction
     found by the algorithm.
@@ -544,7 +544,7 @@ def iterative_bicm_exp(x0, args):
 
 
 @jit(nopython=True)
-def iterative_bimcm(x0, args):
+def iterative_biwcm_d(x0, args):
     """
     Return the next iterative step for the Bipartite Configuration Model reduced version.
 
@@ -581,7 +581,7 @@ def iterative_bimcm(x0, args):
 
 
 @jit(nopython=True)
-def iterative_bimcm_exp(x0, args):
+def iterative_biwcm_d_exp(x0, args):
     """
     Return the next iterative step for the Bipartite Configuration Model reduced version.
 
@@ -614,7 +614,7 @@ def iterative_bimcm_exp(x0, args):
 
 
 @jit(nopython=True)
-def iterative_biwcm(x0, args):
+def iterative_biwcm_c(x0, args):
     """
     Return the next iterative step for the Bipartite Configuration Model reduced version.
 
@@ -739,7 +739,7 @@ def loglikelihood_bicm_exp(x0, args):
 
 
 # @jit(nopython=True)
-# def loglikelihood_bimcm(x0, args):
+# def loglikelihood_biwcm_d(x0, args):
 #     """
 #     Log-likelihood function of the reduced BiCM.
 
@@ -777,7 +777,7 @@ def loglikelihood_bicm_exp(x0, args):
 
 
 @jit(nopython=True)
-def loglikelihood_bimcm(x0, args):
+def loglikelihood_biwcm_d(x0, args):
     """
     Log-likelihood function of the reduced BiCM.
 
@@ -815,7 +815,7 @@ def loglikelihood_bimcm(x0, args):
 
 
 @jit(nopython=True)
-def loglikelihood_bimcm_exp(x0, args):
+def loglikelihood_biwcm_d_exp(x0, args):
     """
     Log-likelihood function of the reduced BiCM.
 
@@ -850,9 +850,9 @@ def loglikelihood_bimcm_exp(x0, args):
 
 
 @jit(nopython=True)
-def loglikelihood_biwcm(x0, args):
+def loglikelihood_biwcm_c(x0, args):
     """
-    Log-likelihood function of the reduced BiWCM.
+    Log-likelihood function of the reduced BiWCM_c.
 
     :param numpy.ndarray x0: 1D fitnesses vector
     :param args: list of arguments needed for the computation
@@ -962,9 +962,9 @@ def loglikelihood_hessian_bicm_exp(x0, args):
 
 
 @jit(nopython=True)
-def loglikelihood_hessian_bimcm(x0, args):
+def loglikelihood_hessian_biwcm_d(x0, args):
     """
-    Log-likelihood hessian of the reduced BiMCM.
+    Log-likelihood hessian of the reduced BiWCM_d.
 
     :param numpy.ndarray x0: 1D fitnesses vector
     :param args: list of arguments needed for the computation
@@ -1000,7 +1000,7 @@ def loglikelihood_hessian_bimcm(x0, args):
 
 
 @jit(nopython=True)
-def loglikelihood_hessian_bimcm_exp(x0, args):  # To be implemented
+def loglikelihood_hessian_biwcm_d_exp(x0, args):  # To be implemented
     """
     Log-likelihood hessian of the reduced BiCM.
 
@@ -1042,9 +1042,9 @@ def loglikelihood_hessian_bimcm_exp(x0, args):  # To be implemented
 
 
 @jit(nopython=True)
-def loglikelihood_hessian_biwcm(x0, args):
+def loglikelihood_hessian_biwcm_c(x0, args):
     """
-    Log-likelihood hessian of the reduced BiWCM.
+    Log-likelihood hessian of the reduced BiWCM_c.
 
     :param numpy.ndarray x0: 1D fitnesses vector
     :param args: list of arguments needed for the computation
@@ -1147,9 +1147,9 @@ def loglikelihood_hessian_diag_bicm_exp(x0, args):
 
 
 @jit(nopython=True)
-def loglikelihood_hessian_diag_bimcm(x0, args):
+def loglikelihood_hessian_diag_biwcm_d(x0, args):
     """
-    Log-likelihood diagonal hessian of the reduced BiMCM.
+    Log-likelihood diagonal hessian of the reduced BiWCM_d.
 
     :param numpy.ndarray x0: 1D fitnesses vector
     :param args: list of arguments needed for the computation
@@ -1183,9 +1183,9 @@ def loglikelihood_hessian_diag_bimcm(x0, args):
 
 
 @jit(nopython=True)
-def loglikelihood_hessian_diag_bimcm_exp(x0, args):  # To be implemented
+def loglikelihood_hessian_diag_biwcm_d_exp(x0, args):  # To be implemented
     """
-    Log-likelihood diagonal hessian of the reduced BiMCM.
+    Log-likelihood diagonal hessian of the reduced BiWCM_d.
 
     :param numpy.ndarray x0: 1D fitnesses vector
     :param args: list of arguments needed for the computation
@@ -1221,9 +1221,9 @@ def loglikelihood_hessian_diag_bimcm_exp(x0, args):  # To be implemented
 
 
 @jit(nopython=True)
-def loglikelihood_hessian_diag_biwcm(x0, args):
+def loglikelihood_hessian_diag_biwcm_c(x0, args):
     """
-    Log-likelihood hessian of the reduced BiWCM.
+    Log-likelihood hessian of the reduced BiWCM_c.
 
     :param numpy.ndarray x0: 1D fitnesses vector
     :param args: list of arguments needed for the computation
@@ -1329,9 +1329,9 @@ def loglikelihood_prime_bicm_exp(x0, args):
 
 
 @jit(nopython=True)
-def loglikelihood_prime_bimcm(x0, args):
+def loglikelihood_prime_biwcm_d(x0, args):
     """
-    Iterative function for loglikelihood gradient BiMCM.
+    Iterative function for loglikelihood gradient BiWCM_d.
 
     :param x0: fitnesses vector
     :type x0: numpy.array
@@ -1369,9 +1369,9 @@ def loglikelihood_prime_bimcm(x0, args):
 
 
 @jit(nopython=True)
-def loglikelihood_prime_bimcm_exp(x0, args):  # To be implemented
+def loglikelihood_prime_biwcm_d_exp(x0, args):  # To be implemented
     """
-    Iterative function for loglikelihood gradient BiMCM.
+    Iterative function for loglikelihood gradient BiWCM_d.
 
     :param x0: fitnesses vector
     :type x0: numpy.array
@@ -1406,9 +1406,9 @@ def loglikelihood_prime_bimcm_exp(x0, args):  # To be implemented
 
 
 @jit(nopython=True)
-def loglikelihood_prime_biwcm(x0, args):
+def loglikelihood_prime_biwcm_c(x0, args):
     """
-    Iterative function for loglikelihood gradient BiWCM.
+    Iterative function for loglikelihood gradient BiWCM_c.
 
     :param x0: fitnesses vector
     :type x0: numpy.array
@@ -1442,35 +1442,35 @@ def loglikelihood_prime_biwcm(x0, args):
     return f
 
 
-def loglikelihood_prime_biwcm_exp(x, args):
+def loglikelihood_prime_biwcm_c_exp(x, args):
     """
     To be implemented
     """
     return None
 
 
-def iterative_biwcm_exp(x, args):
+def iterative_biwcm_c_exp(x, args):
     """
     To be implemented
     """
     return None
 
 
-def loglikelihood_hessian_biwcm_exp(x, args):
+def loglikelihood_hessian_biwcm_c_exp(x, args):
     """
     To be implemented
     """
     return None
 
 
-def loglikelihood_hessian_diag_biwcm_exp(x, args):
+def loglikelihood_hessian_diag_biwcm_c_exp(x, args):
     """
     To be implemented
     """
     return None
 
 
-def loglikelihood_biwcm_exp(x, args):
+def loglikelihood_biwcm_c_exp(x, args):
     """
     To be implemented
     """

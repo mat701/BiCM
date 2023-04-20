@@ -44,11 +44,26 @@ After you have created the BipartiteGraph object, you can compute the bicm of yo
 
 The method "solve_tool" will actually solve the equations and you can customize the solver with many options. The allowed methods are 'newton', 'fixed-point', 'quasinewton', 'root' and they are all performing similarly with the exception of 'root' that uses the scipy.optimize.root solver and is a bit slower. The default choice is the Newton solver.
 If you use one of the get methods before solving the bicm, the solver will start with default options.
+For weighted networks, the package will handle them automatically. If they are discrete it will use the biwcm_d setup, otherwise the biwcm_c.
+
+Computing the binarised network
+--------------------------------------------
+
+You can compute the p-value of each (weighted) link in the network. To return the matrix of pvalues or the binarisation after applying a threshold (inferring the "Comparative Advantage" of nodes) you can use the two following methods:
+
+.. code-block:: python
+
+    myGraph.get_weighted_pvals_mat()
+    myGraph.get_validated_matrix(significance=0.01, validation_method='fdr')
+
+The validation_method variable controls the type of multiple hypothesis testing used.
 
 Computing the projected networks
 --------------------------------------------
 
 To compute the projection of a bipartite network on one layer (rows or columns layer), the BiCM package uses the probabilities of the model to understand if two nodes behave similarly and should be connected in the projection. This makes sure that two nodes with high degrees are not automatically linked because they share a number of common neighbors, but will first discount the information about the degrees. See https://iopscience.iop.org/article/10.1088/1367-2630/aa6b38/meta for the details of this projection method.
+
+For the moment, only the projection of binary (unweighted) networks has been implemented.
 
 To compute the projected network and get the edgelist or the adjacency list, use one of the following:
 
@@ -60,4 +75,4 @@ To compute the projected network and get the edgelist or the adjacency list, use
 
 You can also request the formats 'array' or 'sparse' that yield an adjacency matrix as a numpy array or scipy sparse matrix.
 
-The first method is the customizable one, while the other two methods calculate the projection with default options if it has not been computed yet. The method option sets the approximation of the Poisson Binomial variable that is the number of common neighbors between nodes. Allowed options are 'poisson' (default and reliable), 'poibin' (exact but very slow, to be avoided except for small networks), 'normal' and 'rna' (to be used only in specific cases, otherwise avoid).
+The first method is the customizable one, while the other two methods calculate the projection with default options if it has not been computed yet. The "method" option sets the approximation of the Poisson Binomial variable that is the number of common neighbors between nodes. Allowed options are 'poisson' (default and reliable), 'poibin' (exact but very slow, to be avoided except for small networks), 'normal' and 'rna' (to be used only in specific cases, otherwise avoid).

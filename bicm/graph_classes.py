@@ -176,9 +176,9 @@ class BipartiteGraph:
                     self.rows_deg = (self.biadjacency != 0).sum(1)
                     self.cols_deg = (self.biadjacency != 0).sum(0)
                     if self.continuous_weights:
-                        print('Continuous weighted model: BiWCM')
+                        print('Continuous weighted model: BiWCM_c')
                     else:
-                        print('Discrete multilink weighted model: BiMCM')
+                        print('Discrete weighted model: BiWCM_d')
                 else:
                     self.adj_list, self.inv_adj_list, self.rows_deg, self.cols_deg = \
                         nef.adjacency_list_from_biadjacency(self.biadjacency)
@@ -418,59 +418,59 @@ class BipartiteGraph:
             self.args = (self.r_rows_deg, self.r_cols_deg, self.rows_multiplicity, self.cols_multiplicity)
             if self.continuous_weights:
                 d_fun = {
-                    'newton': lambda x: - mof.loglikelihood_prime_biwcm(x, self.args),
-                    'quasinewton': lambda x: - mof.loglikelihood_prime_biwcm(x, self.args),
-                    'fixed-point': lambda x: mof.iterative_biwcm(x, self.args),
-                    'newton_exp': lambda x: - mof.loglikelihood_prime_biwcm_exp(x, self.args),
-                    'quasinewton_exp': lambda x: - mof.loglikelihood_prime_biwcm_exp(x, self.args),
-                    'fixed-point_exp': lambda x: mof.iterative_biwcm_exp(x, self.args),
+                    'newton': lambda x: - mof.loglikelihood_prime_biwcm_c(x, self.args),
+                    'quasinewton': lambda x: - mof.loglikelihood_prime_biwcm_c(x, self.args),
+                    'fixed-point': lambda x: mof.iterative_biwcm_c(x, self.args),
+                    'newton_exp': lambda x: - mof.loglikelihood_prime_biwcm_c_exp(x, self.args),
+                    'quasinewton_exp': lambda x: - mof.loglikelihood_prime_biwcm_c_exp(x, self.args),
+                    'fixed-point_exp': lambda x: mof.iterative_biwcm_c_exp(x, self.args),
                 }
                 d_fun_jac = {
-                    'newton': lambda x: - mof.loglikelihood_hessian_biwcm(x, self.args),
-                    'quasinewton': lambda x: - mof.loglikelihood_hessian_diag_biwcm(x, self.args),
+                    'newton': lambda x: - mof.loglikelihood_hessian_biwcm_c(x, self.args),
+                    'quasinewton': lambda x: - mof.loglikelihood_hessian_diag_biwcm_c(x, self.args),
                     'fixed-point': None,
-                    'newton_exp': lambda x: - mof.loglikelihood_hessian_biwcm_exp(x, self.args),
-                    'quasinewton_exp': lambda x: - mof.loglikelihood_hessian_diag_biwcm_exp(x, self.args),
+                    'newton_exp': lambda x: - mof.loglikelihood_hessian_biwcm_c_exp(x, self.args),
+                    'quasinewton_exp': lambda x: - mof.loglikelihood_hessian_diag_biwcm_c_exp(x, self.args),
                     'fixed-point_exp': None,
                 }
                 d_fun_step = {
-                    # 'newton': lambda x: - mof.loglikelihood_biwcm(x, self.args),
-                    # 'quasinewton': lambda x: - mof.loglikelihood_biwcm(x, self.args),
-                    # 'fixed-point': lambda x: - mof.loglikelihood_biwcm(x, self.args),
-                    'newton': lambda x: mof.mrse_biwcm(x, self.args),
-                    'quasinewton': lambda x: mof.mrse_biwcm(x, self.args),
-                    'fixed-point': lambda x: mof.mrse_biwcm(x, self.args),
-                    'newton_exp': lambda x: - mof.loglikelihood_biwcm_exp(x, self.args),
-                    'quasinewton_exp': lambda x: - mof.loglikelihood_biwcm_exp(x, self.args),
-                    'fixed-point_exp': lambda x: - mof.loglikelihood_biwcm_exp(x, self.args),
+                    # 'newton': lambda x: - mof.loglikelihood_biwcm_c(x, self.args),
+                    # 'quasinewton': lambda x: - mof.loglikelihood_biwcm_c(x, self.args),
+                    # 'fixed-point': lambda x: - mof.loglikelihood_biwcm_c(x, self.args),
+                    'newton': lambda x: mof.mrse_biwcm_c(x, self.args),
+                    'quasinewton': lambda x: mof.mrse_biwcm_c(x, self.args),
+                    'fixed-point': lambda x: mof.mrse_biwcm_c(x, self.args),
+                    'newton_exp': lambda x: - mof.loglikelihood_biwcm_c_exp(x, self.args),
+                    'quasinewton_exp': lambda x: - mof.loglikelihood_biwcm_c_exp(x, self.args),
+                    'fixed-point_exp': lambda x: - mof.loglikelihood_biwcm_c_exp(x, self.args),
                 }
             elif self.weighted:
                 d_fun = {
-                    'newton': lambda x: - mof.loglikelihood_prime_bimcm(x, self.args),
-                    'quasinewton': lambda x: - mof.loglikelihood_prime_bimcm(x, self.args),
-                    'fixed-point': lambda x: mof.iterative_bimcm(x, self.args),
-                    'newton_exp': lambda x: - mof.loglikelihood_prime_bimcm_exp(x, self.args),
-                    'quasinewton_exp': lambda x: - mof.loglikelihood_prime_bimcm_exp(x, self.args),
-                    'fixed-point_exp': lambda x: mof.iterative_bimcm_exp(x, self.args),
+                    'newton': lambda x: - mof.loglikelihood_prime_biwcm_d(x, self.args),
+                    'quasinewton': lambda x: - mof.loglikelihood_prime_biwcm_d(x, self.args),
+                    'fixed-point': lambda x: mof.iterative_biwcm_d(x, self.args),
+                    'newton_exp': lambda x: - mof.loglikelihood_prime_biwcm_d_exp(x, self.args),
+                    'quasinewton_exp': lambda x: - mof.loglikelihood_prime_biwcm_d_exp(x, self.args),
+                    'fixed-point_exp': lambda x: mof.iterative_biwcm_d_exp(x, self.args),
                 }
                 d_fun_jac = {
-                    'newton': lambda x: - mof.loglikelihood_hessian_bimcm(x, self.args),
-                    'quasinewton': lambda x: - mof.loglikelihood_hessian_diag_bimcm(x, self.args),
+                    'newton': lambda x: - mof.loglikelihood_hessian_biwcm_d(x, self.args),
+                    'quasinewton': lambda x: - mof.loglikelihood_hessian_diag_biwcm_d(x, self.args),
                     'fixed-point': None,
-                    'newton_exp': lambda x: - mof.loglikelihood_hessian_bimcm_exp(x, self.args),
-                    'quasinewton_exp': lambda x: - mof.loglikelihood_hessian_diag_bimcm_exp(x, self.args),
+                    'newton_exp': lambda x: - mof.loglikelihood_hessian_biwcm_d_exp(x, self.args),
+                    'quasinewton_exp': lambda x: - mof.loglikelihood_hessian_diag_biwcm_d_exp(x, self.args),
                     'fixed-point_exp': None,
                 }
                 d_fun_step = {
-                    # 'newton': lambda x: - mof.loglikelihood_bimcm(x, self.args),
-                    # 'quasinewton': lambda x: - mof.loglikelihood_bimcm(x, self.args),
-                    # 'fixed-point': lambda x: - mof.loglikelihood_bimcm(x, self.args),
-                    'newton': lambda x: mof.mrse_bimcm(x, self.args),
-                    'quasinewton': lambda x: mof.mrse_bimcm(x, self.args),
-                    'fixed-point': lambda x: mof.mrse_bimcm(x, self.args),
-                    'newton_exp': lambda x: - mof.loglikelihood_bimcm_exp(x, self.args),
-                    'quasinewton_exp': lambda x: - mof.loglikelihood_bimcm_exp(x, self.args),
-                    'fixed-point_exp': lambda x: - mof.loglikelihood_bimcm_exp(x, self.args),
+                    # 'newton': lambda x: - mof.loglikelihood_biwcm_d(x, self.args),
+                    # 'quasinewton': lambda x: - mof.loglikelihood_biwcm_d(x, self.args),
+                    # 'fixed-point': lambda x: - mof.loglikelihood_biwcm_d(x, self.args),
+                    'newton': lambda x: mof.mrse_biwcm_d(x, self.args),
+                    'quasinewton': lambda x: mof.mrse_biwcm_d(x, self.args),
+                    'fixed-point': lambda x: mof.mrse_biwcm_d(x, self.args),
+                    'newton_exp': lambda x: - mof.loglikelihood_biwcm_d_exp(x, self.args),
+                    'quasinewton_exp': lambda x: - mof.loglikelihood_biwcm_d_exp(x, self.args),
+                    'fixed-point_exp': lambda x: - mof.loglikelihood_biwcm_d_exp(x, self.args),
                 }
             else:
                 d_fun = {
@@ -511,14 +511,14 @@ class BipartiteGraph:
             # lins_args = (d_fun_step[method], self.args)
             if self.continuous_weights:
                 if self.exp:
-                    lins_args = (mof.loglikelihood_biwcm_exp, self.args)
+                    lins_args = (mof.loglikelihood_biwcm_c_exp, self.args)
                 else:
-                    lins_args = (mof.loglikelihood_biwcm, self.args)
+                    lins_args = (mof.loglikelihood_biwcm_c, self.args)
             elif self.weighted:
                 if self.exp:
-                    lins_args = (mof.loglikelihood_bimcm_exp, self.args)
+                    lins_args = (mof.loglikelihood_biwcm_d_exp, self.args)
                 else:
-                    lins_args = (mof.loglikelihood_bimcm, self.args)
+                    lins_args = (mof.loglikelihood_biwcm_d, self.args)
             else:
                 if self.exp:
                     lins_args = (mof.loglikelihood_bicm_exp, self.args)
@@ -769,14 +769,14 @@ class BipartiteGraph:
         if self.method != 'root':
             if self.continuous_weights:
                 if self.exp:
-                    self.loglikelihood = mof.loglikelihood_biwcm_exp(self.solution_array, self.args)
+                    self.loglikelihood = mof.loglikelihood_biwcm_c_exp(self.solution_array, self.args)
                 else:
-                    self.loglikelihood = mof.loglikelihood_biwcm(self.solution_array, self.args)
+                    self.loglikelihood = mof.loglikelihood_biwcm_c(self.solution_array, self.args)
             elif self.weighted:
                 if self.exp:
-                    self.loglikelihood = mof.loglikelihood_bimcm_exp(self.solution_array, self.args)
+                    self.loglikelihood = mof.loglikelihood_biwcm_d_exp(self.solution_array, self.args)
                 else:
-                    self.loglikelihood = mof.loglikelihood_bimcm(self.solution_array, self.args)
+                    self.loglikelihood = mof.loglikelihood_biwcm_d(self.solution_array, self.args)
             else:
                 self.loglikelihood = self.step_fun(self.solution_array)
         # Reset solver lambda functions for multiprocessing compatibility
@@ -822,9 +822,9 @@ class BipartiteGraph:
                 )
             self._set_solved_problem(sol)
             if self.continuous_weights:
-                r_avg_mat = nef.biwcm_from_fitnesses(self.x[self.nonfixed_rows], self.y[self.nonfixed_cols])
+                r_avg_mat = nef.biwcm_c_from_fitnesses(self.x[self.nonfixed_rows], self.y[self.nonfixed_cols])
             elif self.weighted:
-                r_avg_mat = nef.bimcm_from_fitnesses(self.x[self.nonfixed_rows], self.y[self.nonfixed_cols])
+                r_avg_mat = nef.biwcm_d_from_fitnesses(self.x[self.nonfixed_rows], self.y[self.nonfixed_cols])
             else:
                 r_avg_mat = nef.bicm_from_fitnesses(self.x[self.nonfixed_rows], self.y[self.nonfixed_cols])
             self.avg_mat[self.nonfixed_rows[:, None], self.nonfixed_cols] = np.copy(r_avg_mat)
@@ -930,10 +930,10 @@ class BipartiteGraph:
         :param str model: Model to be used, to be passed only if the user wants to use a different model
         than the recognized one.
         """
-        if model == 'biwcm':
+        if model == 'biwcm_c':
             self.continuous_weights = True
             self.weighted = True
-        elif model == 'bimcm':
+        elif model == 'biwcm_d':
             self.continuous_weights = False
             self.weighted = True
         elif model == 'bicm':
@@ -1192,21 +1192,31 @@ class BipartiteGraph:
                     pval_adj_list[node].update(pvals_dict[node])
         return pval_adj_list
 
-    def compute_projection(self, rows=True, alpha=0.05, method='poisson', threads_num=None, progress_bar=True):
+    def compute_projection(self, rows=True, alpha=0.05, approx_method=None, method=None,
+                           threads_num=None, progress_bar=True, validation_method='fdr'):
         """Compute the projection of the network on the rows or columns layer.
         If the BiCM has not been computed, it also computes it with standard settings.
         This is the most customizable method for the pvalues computation.
 
         :param bool rows: True if requesting the rows' projection.
-        :param float alpha: Threshold for the FDR validation.
-        :param str method: Method for the approximation of the pvalues computation.
+        :param float alpha: Threshold for the p-values validation.
+        :param str approx_method: Method for the approximation of the pvalues computation.
             Implemented methods are *poisson*, *poibin*, *normal*, *rna*.
+        :param str method: Deprecated, same as approx_method.
         :param threads_num: Number of threads to use for the parallelization. If it is set to 1,
             the computation is not parallelized.
         :param bool progress_bar: Show progress bar of the pvalues computation.
+        :param str validation_method:  The type of validation to apply: 'global' for a global threshold,
+         'fdr' for False Discovery Rate or 'bonferroni' for Bonferroni correction.
         """
+        if approx_method is None:
+            if method is not None:
+                print('"method" is deprecated, use approx_method instead')
+                approx_method = method
+            else:
+                approx_method = 'poisson'
         self.rows_projection = rows
-        self.projection_method = method
+        self.projection_method = approx_method
         self.progress_bar = progress_bar
         if self.weighted:
             print('Weighted projection not yet implemented.')
@@ -1233,11 +1243,13 @@ class BipartiteGraph:
                 self.solve_tool()
             if rows:
                 self.rows_pvals = self._projection_calculator()
-                self.projected_rows_adj_list = self._projection_from_pvals(alpha=alpha)
+                self.projected_rows_adj_list = self._projection_from_pvals(alpha=alpha,
+                                                                           validation_method=validation_method)
                 self.is_rows_projected = True
             else:
                 self.cols_pvals = self._projection_calculator()
-                self.projected_cols_adj_list = self._projection_from_pvals(alpha=alpha)
+                self.projected_cols_adj_list = self._projection_from_pvals(alpha=alpha,
+                                                                           validation_method=validation_method)
                 self.is_cols_projected = True
                 
     def compute_weighted_pvals_mat(self):
@@ -1266,35 +1278,51 @@ class BipartiteGraph:
             self.compute_weighted_pvals_mat()
         return self.pvals_mat
 
-    def get_validated_matrix(self, significance=0.01):
+    def get_validated_matrix(self, significance=0.01, validation_method=None):
         """
         Extract a backbone of the original network keeping only the most significant links.
         At the moment this method only applies a global significance level for any link.
 
         :param float significance:  Threshold for the pvalues significance.
+        :param str validation_method:  The type of validation to apply: 'global' for a global threshold,
+         'fdr' for False Discovery Rate or 'bonferroni' for Bonferroni correction.
         """
         if self.pvals_mat is None:
             self.compute_weighted_pvals_mat()
-        return (self.pvals_mat < significance).astype(np.ubyte)
+        if validation_method is None:
+            print('FDR validated matrix will be returned by default. '
+                  'Set validation_method to "global" or "bonferroni" for alternatives or use .get_weighted_pvals_mat.')
+            validation_method = 'fdr'
+        assert validation_method in ['bonferroni', 'fdr', 'global'], 'validation_method must be a valid string'
+        pvals_array = self.pvals_mat.flatten()
+        val_threshold = self._pvals_validator(pvals_array, alpha=significance, validation_method=validation_method)
+        return (self.pvals_mat < val_threshold).astype(np.ubyte)
 
-    def _pvals_validator(self, pval_list, alpha=0.05):
+    def _pvals_validator(self, pval_list, alpha=0.05, validation_method='fdr'):
         sorted_pvals = np.sort(pval_list)
         if self.rows_projection:
             multiplier = 2 * alpha / (self.n_rows * (self.n_rows - 1))
         else:
             multiplier = 2 * alpha / (self.n_cols * (self.n_cols - 1))
-        try:
-            eff_fdr_pos = np.where(sorted_pvals <= (np.arange(1, len(sorted_pvals) + 1) * alpha * multiplier))[0][-1]
-        except IndexError:
-            print('No V-motifs will be validated. Try increasing alpha')
-            eff_fdr_pos = 0
-        eff_fdr_th = (eff_fdr_pos + 1) * multiplier  # +1 because of Python numbering: our pvals are ordered 1,...,n
+        eff_fdr_th = alpha
+        if validation_method == 'bonferroni':
+            eff_fdr_th = multiplier
+            if sorted_pvals[0] > eff_fdr_th:
+                print('No V-motifs will be validated. Try increasing alpha')
+        elif validation_method == 'fdr':
+            try:
+                eff_fdr_pos = np.where(sorted_pvals <= (np.arange(1, len(sorted_pvals) + 1) * alpha * multiplier))[0][-1]
+            except IndexError:
+                print('No V-motifs will be validated. Try increasing alpha')
+                eff_fdr_pos = 0
+            eff_fdr_th = (eff_fdr_pos + 1) * multiplier  # +1 because of Python numbering: our pvals are ordered 1,...,n
         return eff_fdr_th
 
-    def _projection_from_pvals(self, alpha=0.05):
+    def _projection_from_pvals(self, alpha=0.05, validation_method='fdr'):
         """Internal method to build the projected network from pvalues.
 
-        :param float alpha:  Threshold for the FDR validation.
+        :param float alpha:  Threshold for the validation.
+        :param str validation_method:  The type of validation to apply.
         """
         pval_list = []
         if self.rows_projection:
@@ -1304,7 +1332,7 @@ class BipartiteGraph:
         for node in pvals_adj_list:
             for neighbor in pvals_adj_list[node]:
                 pval_list.append(pvals_adj_list[node][neighbor])
-        eff_fdr_th = self._pvals_validator(pval_list, alpha=alpha)
+        eff_fdr_th = self._pvals_validator(pval_list, alpha=alpha, validation_method=validation_method)
         projected_adj_list = dict([])
         for node in self.v_adj_list:
             for neighbor in self.v_adj_list[node]:
@@ -1319,7 +1347,8 @@ class BipartiteGraph:
                             method='poisson',
                             threads_num=None,
                             progress_bar=True,
-                            fmt='adjacency_list'):
+                            fmt='adjacency_list',
+                            validation_method='fdr'):
         """Get the projected network on the rows layer of the graph.
 
         :param alpha: threshold for the validation of the projected edges.
@@ -1333,10 +1362,12 @@ class BipartiteGraph:
         :param bool progress_bar: Show the progress bar
         :param str fmt: the desired format for the output: adjacency_list (default) or edgelist
         :returns: the projected network on the rows layer, in the format specified by fmt
+        :param str validation_method:  The type of validation to apply: 'global' for a global threshold,
+         'fdr' for False Discovery Rate or 'bonferroni' for Bonferroni correction.
         """
         if not self.is_rows_projected:
-            self.compute_projection(rows=True, alpha=alpha, method=method, threads_num=threads_num,
-                                    progress_bar=progress_bar)
+            self.compute_projection(rows=True, alpha=alpha, approx_method=method, threads_num=threads_num,
+                                    progress_bar=progress_bar, validation_method=validation_method)
 
         if self.rows_dict is None:
             adj_list_to_return = self.projected_rows_adj_list
@@ -1373,7 +1404,7 @@ class BipartiteGraph:
         """
         if not self.is_cols_projected:
             self.compute_projection(rows=False,
-                                    alpha=alpha, method=method, threads_num=threads_num, progress_bar=progress_bar)
+                                    alpha=alpha, approx_method=method, threads_num=threads_num, progress_bar=progress_bar)
         if self.cols_dict is None:
             return self.projected_cols_adj_list
         else:

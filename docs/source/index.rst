@@ -43,12 +43,19 @@ To compute the BiCM probability matrix of the graph or the relative fitnesses co
     my_probability_matrix = myGraph.get_bicm_matrix()
     my_x, my_y = myGraph.get_bicm_fitnesses()
 
-This will solve the bicm using recommended settings for the solver. 
+This will solve the bicm, or the relative biwcm model if the graph is weighted, using recommended settings for the solver.
 To customize the solver you can alternatively use (in advance) the following method:
 
 .. code-block:: python
     
     myGraph.solve_tool(light_mode=False, method='newton', initial_guess=None, tolerance=1e-8, max_steps=None, verbose=False, linsearch=True, regularise=False, print_error=True, exp=False)
+
+You can compute the p-value of each (weighted) link in the network. To return the matrix of pvalues or the binarisation after applying a threshold:
+
+.. code-block:: python
+
+    myGraph.get_weighted_pvals_mat()
+    myGraph.get_validated_matrix(significance=0.01, validation_method='fdr')
 
 To get the rows or columns projection of the graph:
 

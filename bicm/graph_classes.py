@@ -286,8 +286,27 @@ class BipartiteGraph:
         elif self.initial_guess == 'degrees':
             self.r_x = self.r_rows_deg.astype(np.float64)
             self.r_y = self.r_cols_deg.astype(np.float64)
+        elif isinstance(self.initial_guess, (tuple, list, np.ndarray)):
+            if len(self.initial_guess) == 2 and type(self.initial_guess[0]) in [tuple, list, np.ndarray]:
+                if len(self.initial_guess[0]) == self.r_n_rows and len(self.initial_guess[1]) == self.r_n_cols:
+                    self.r_x = np.array(self.initial_guess[0])
+                    self.r_y = np.array(self.initial_guess[1])
+                elif len(self.initial_guess[0]) == self.n_rows and len(self.initial_guess[1]) == self.n_cols:
+                    self.r_x[self.r_invert_rows_deg] = self.initial_guess[0][self.nonfixed_rows]
+                    self.r_y[self.r_invert_cols_deg] = self.initial_guess[1][self.nonfixed_cols]
+                else:
+                    raise ValueError('The size of the given initial condition is not the same of the input graph')
+            else:
+                if len(self.initial_guess) == self.r_n_rows + self.r_n_cols:
+                    self.r_x = np.array(self.initial_guess[:self.r_n_rows])
+                    self.r_y = np.array(self.initial_guess[self.r_n_rows:])
+                elif len(self.initial_guess[0]) == self.n_rows and len(self.initial_guess[1]) == self.n_cols:
+                    self.r_x[self.r_invert_rows_deg] = self.initial_guess[:self.r_n_rows][self.nonfixed_rows]
+                    self.r_y[self.r_invert_cols_deg] = self.initial_guess[self.r_n_rows:][self.nonfixed_cols]
+                else:
+                    raise ValueError('The size of the given initial condition is not the same of the input graph')
         else:
-            raise ValueError('initial_guess must be None, "chung_lu", "random", "uniform" or "degrees"')
+            raise ValueError('Initial_guess must be None, "chung_lu", "random", "uniform", "degrees" or an array or a tuple of 2 lists/numpy arrays')
         if not self.exp:
             if self.weighted:  # Avoid negative thetas
                 normalization = max(np.max(self.r_x), np.max(self.r_y))
@@ -1517,6 +1536,9 @@ class BipartiteGraph:
             print('Graph already contains edges or has a degree sequence. Use clean_edges() first.')
         else:
             self._initialize_graph(degree_sequences=degree_sequences)
+
+    def set_to_continuous(self):
+        self.continuous_weights = True
 
     def clean_edges(self):
         """Clean the edges of the graph.

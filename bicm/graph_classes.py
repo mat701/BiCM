@@ -1002,7 +1002,7 @@ class BipartiteGraph:
                 if max_err >= 1:
                     print('Solver did not converge: error', max_err)
                 else:
-                    print('Solver finished with an error of {:.2f}%'.format(max_err * 100))
+                    print('Solver converged, the maximum relative error is {:.2f}%'.format(max_err * 100))
             self.error = max_err
         self.is_randomized = True
 

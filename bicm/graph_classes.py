@@ -131,6 +131,7 @@ class BipartiteGraph:
         self.pvals_mat = None
         self.exp = False
         self.error = None
+        self.sparse = None
         self._initialize_graph(biadjacency=biadjacency, adjacency_list=adjacency_list, edgelist=edgelist,
                                degree_sequences=degree_sequences)
 
@@ -156,40 +157,44 @@ class BipartiteGraph:
         :type degree_sequences: list, numpy.array, tuple, optional
         """
         if biadjacency is not None:
-            if not isinstance(biadjacency, (list, np.ndarray)) and not scipy.sparse.isspmatrix(biadjacency):
-                raise TypeError(
-                    'The biadjacency matrix must be passed as a list or numpy array or scipy sparse matrix')
+            if not isinstance(biadjacency, (list, np.ndarray)):
+                if scipy.sparse.isspmatrix(biadjacency):
+                    self.sparse = True
+                else:
+                    raise TypeError(
+                        'The biadjacency matrix must be passed as a list or numpy array or scipy sparse matrix')
             else:
-                if isinstance(biadjacency, list):
-                    self.biadjacency = np.array(biadjacency)
+                self.sparse = False
+            if isinstance(biadjacency, list):
+                self.biadjacency = np.array(biadjacency)
+            else:
+                self.biadjacency = biadjacency
+            if self.biadjacency.shape[0] == self.biadjacency.shape[1]:
+                print(
+                    'Your matrix is square. Please remember that it \
+                    is treated as a biadjacency matrix, not an adjacency matrix.')
+            if self.sparse:
+                self.continuous_weights = not np.all(np.equal(np.mod(self.biadjacency.data, 1), 0))
+            else:
+                self.continuous_weights = not np.all(np.equal(np.mod(self.biadjacency, 1), 0))
+            if self.continuous_weights or np.max(self.biadjacency) > 1:
+                self.weighted = True
+                self.rows_seq = self.biadjacency.sum(1)
+                self.cols_seq = self.biadjacency.sum(0)
+                self.rows_deg = (self.biadjacency != 0).sum(1)
+                self.cols_deg = (self.biadjacency != 0).sum(0)
+                if self.continuous_weights:
+                    print('Continuous weighted model: BiWCM_c')
                 else:
-                    self.biadjacency = biadjacency
-                if self.biadjacency.shape[0] == self.biadjacency.shape[1]:
-                    print(
-                        'Your matrix is square. Please remember that it \
-                        is treated as a biadjacency matrix, not an adjacency matrix.')
-                if scipy.sparse.isspmatrix(self.biadjacency):
-                    self.continuous_weights = not np.all(np.equal(np.mod(self.biadjacency.data, 1), 0))
-                else:
-                    self.continuous_weights = not np.all(np.equal(np.mod(self.biadjacency, 1), 0))
-                if self.continuous_weights or np.max(self.biadjacency) > 1:
-                    self.weighted = True
-                    self.rows_seq = self.biadjacency.sum(1)
-                    self.cols_seq = self.biadjacency.sum(0)
-                    self.rows_deg = (self.biadjacency != 0).sum(1)
-                    self.cols_deg = (self.biadjacency != 0).sum(0)
-                    if self.continuous_weights:
-                        print('Continuous weighted model: BiWCM_c')
-                    else:
-                        print('Discrete weighted model: BiWCM_d')
-                else:
-                    self.adj_list, self.inv_adj_list, self.rows_deg, self.cols_deg = \
-                        nef.adjacency_list_from_biadjacency(self.biadjacency)
+                    print('Discrete weighted model: BiWCM_d')
+            else:
+                self.adj_list, self.inv_adj_list, self.rows_deg, self.cols_deg = \
+                    nef.adjacency_list_from_biadjacency(self.biadjacency)
 
-                self.n_rows = len(self.rows_deg)
-                self.n_cols = len(self.cols_deg)
-                self._initialize_node_dictionaries()
-                self.is_initialized = True
+            self.n_rows = len(self.rows_deg)
+            self.n_cols = len(self.cols_deg)
+            self._initialize_node_dictionaries()
+            self.is_initialized = True
 
         elif edgelist is not None:
             if not isinstance(edgelist, (list, np.ndarray)):
@@ -744,7 +749,7 @@ class BipartiteGraph:
         :param bool in_place: check also the error in the single entries of the matrices.
             Always False unless comparing two different solutions.
         """
-        if self.biadjacency is not None and self.avg_mat is not None:
+        if self.biadjacency is not None and self.avg_mat is not None and not self.sparse:
             return self.check_sol(self.biadjacency, self.avg_mat, return_error=return_error, in_place=in_place)
         else:
             return self.check_sol_light(return_error=return_error)
@@ -934,7 +939,7 @@ class BipartiteGraph:
         It does not return the solution, use the getter methods instead.
 
         :param bool light_mode: Doesn't use matrices in the computation if this is set to True.
-            If the graph has been initialized without the matrix, the light mode is used regardless.
+            If the graph has been initialized without the matrix or in sparse mode, the light mode is used regardless.
         :param str method: Method of choice among *newton*, *quasinewton* or *iterative*, default is set by the model
         solved
         :param str initial_guess: Initial guess of choice among *None*, *random*, *uniform* or *degrees*,
@@ -983,7 +988,7 @@ class BipartiteGraph:
         self._set_parameters(method=method, initial_guess=initial_guess, tol=tol, eps=eps, regularise=regularise,
                              max_steps=max_steps, verbose=verbose, linsearch=linsearch, exp=exp,
                              full_return=full_return)
-        if self.biadjacency is not None and (light_mode is None or not light_mode):
+        if self.biadjacency is not None and not self.sparse and (light_mode is None or not light_mode):
             self._solve_bicm_full()
         else:
             if light_mode is False:

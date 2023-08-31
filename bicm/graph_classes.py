@@ -168,7 +168,10 @@ class BipartiteGraph:
                     print(
                         'Your matrix is square. Please remember that it \
                         is treated as a biadjacency matrix, not an adjacency matrix.')
-                self.continuous_weights = not np.all(np.equal(np.mod(self.biadjacency, 1), 0))
+                if scipy.sparse.isspmatrix(self.biadjacency):
+                    self.continuous_weights = not np.all(np.equal(np.mod(self.biadjacency.data, 1), 0))
+                else:
+                    self.continuous_weights = not np.all(np.equal(np.mod(self.biadjacency, 1), 0))
                 if self.continuous_weights or np.max(self.biadjacency) > 1:
                     self.weighted = True
                     self.rows_seq = self.biadjacency.sum(1)

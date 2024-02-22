@@ -940,10 +940,11 @@ class BipartiteGraph:
 
         :param bool light_mode: Doesn't use matrices in the computation if this is set to True.
             If the graph has been initialized without the matrix or in sparse mode, the light mode is used regardless.
-        :param str method: Method of choice among *newton*, *quasinewton* or *iterative*, default is set by the model
-        solved
-        :param str initial_guess: Initial guess of choice among *None*, *random*, *uniform* or *degrees*,
-        default is None
+        :param str method: Method of choice among *newton*, *quasinewton* or *iterative*, default is set by the model solved
+        :param str initial_guess: Initial guess of choice among strings: *None*, *chung-lu*, *random*, *uniform*, *degrees*,
+             or a list or a numpy array that will be set as initial conditions. The array has to have the same size as
+             the number of rows + the number of columns or has to be a couple of array with len (n_rows, n_cols).
+             Default is *None* which is the *chung-lu* approximation
         :param float tol: Tolerance of the solution, optional
         :param float eps: Tolerance of the difference between consecutive solutions, optional
         :param int max_steps: Maximum number of steps, optional
@@ -954,8 +955,8 @@ class BipartiteGraph:
         :param bool full_return: If True, the solver returns some more insights on the convergence. Default False.
         :param bool exp: if this is set to true the solver works with the reparameterization $x_i = e^{-\theta_i}$,
             $y_\alpha = e^{-\theta_\alpha}$. It might be slightly faster but also might not converge.
-        :param str model: Model to be used, to be passed only if the user wants to use a different model
-        than the recognized one.
+        :param str model: Model to be used, to be passed only if the user wants to use a model different
+            from the recognized one.
         """
         if model == 'biwcm_c':
             self.continuous_weights = True
@@ -1248,6 +1249,8 @@ class BipartiteGraph:
         if self.weighted:
             print('Weighted projection not yet implemented.')
             return
+        if alpha == 1:
+            print('Warning: alpha=1 will yield a full projection.')
         if threads_num is None:
             if system() == 'Windows':
                 threads_num = 1
@@ -1323,7 +1326,7 @@ class BipartiteGraph:
         assert validation_method in ['bonferroni', 'fdr', 'global'], 'validation_method must be a valid string'
         pvals_array = self.pvals_mat.flatten()
         val_threshold = self._pvals_validator(pvals_array, alpha=significance, validation_method=validation_method)
-        return (self.pvals_mat < val_threshold).astype(np.ubyte)
+        return (self.pvals_mat <= val_threshold).astype(np.ubyte)
 
     def _pvals_validator(self, pval_list, alpha=0.05, validation_method='fdr'):
         sorted_pvals = np.sort(pval_list)
@@ -1392,6 +1395,8 @@ class BipartiteGraph:
         :param str validation_method:  The type of validation to apply: 'global' for a global threshold,
          'fdr' for False Discovery Rate or 'bonferroni' for Bonferroni correction.
         """
+        if alpha == 1:
+            print('Warning: alpha=1 will yield a full projection.')
         if not self.is_rows_projected:
             self.compute_projection(rows=True, alpha=alpha, approx_method=method, threads_num=threads_num,
                                     progress_bar=progress_bar, validation_method=validation_method)
@@ -1429,6 +1434,8 @@ class BipartiteGraph:
         :param str fmt: the desired format for the output: adjacency_list (default) or edgelist
         :returns: the projected network on the columns layer, in the format specified by fmt
         """
+        if alpha == 1:
+            print('Warning: alpha=1 will yield a full projection.')
         if not self.is_cols_projected:
             self.compute_projection(rows=False,
                                     alpha=alpha, approx_method=method, threads_num=threads_num, progress_bar=progress_bar)

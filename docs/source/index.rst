@@ -1,7 +1,14 @@
 BiCM documentation
 =====================================
 
-This package provides a tool for calculating the Bipartite Configuration Model (BiCM), as introduced in `Fast and scalable likelihood maximization for Exponential Random Graph Models with local constraints. Vallarano et al., Scientific Reports 11.1 (2021) <https://doi.org/10.1038/s41598-021-93830-4>`_, `Randomizing bipartite networks: the case of the World Trade Web. Saracco et al., Sci Rep 5, 10595 (2015). <https://doi.org/10.1038/srep10595>`_ , and the relative monopartite projection on one layer introduced in `Inferring monopartite projections of bipartite networks: an entropy-based approach, Saracco et al., 2017 New J. Phys. 19 053022 <https://doi.org/10.1088/1367-2630/aa6b38>`_ . 
+This package provides a tool for calculating the Bipartite Configuration Model (BiCM), as introduced in::
+
+    `Fast and scalable likelihood maximization for Exponential Random Graph Models with local constraints. Vallarano et al., Scientific Reports 11.1 (2021) <https://doi.org/10.1038/s41598-021-93830-4>`_,
+    `Randomizing bipartite networks: the case of the World Trade Web. Saracco et al., Sci Rep 5, 10595 (2015). <https://doi.org/10.1038/srep10595>`_
+
+The monopartite projection on one layer is introduced in::
+
+    `Inferring monopartite projections of bipartite networks: an entropy-based approach, Saracco et al., 2017 New J. Phys. 19 053022 <https://doi.org/10.1088/1367-2630/aa6b38>`_ .
 
 Basic functionalities
 =====================================

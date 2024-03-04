@@ -12,6 +12,9 @@ This package is also a module of NEMtropy that you can find at https://github.co
 
 For more solvers of maximum entropy configuration models visit https://meh.imtlucca.it/ .
 
+NOTE of the developer: there was an error in the projection threshold, validating less links than it should have.
+Please re-run your analysis after updating to the last version (>=3.1)
+
 
 ## Basic functionalities
 
@@ -56,7 +59,7 @@ Alternatively, to customize the projection:
 
     myGraph.compute_projection(rows=True, alpha=0.05, method='poisson', threads_num=4, progress_bar=True)
     
-Now version 3.0.0 is online, and you can use the package with weighted networks as well using the BiWCM models!
+Now version 3 is online, and you can use the package with weighted networks as well using the BiWCM models!
 
 See a more detailed walkthrough in **tests/bicm_test** or **tests/biwcm_test** notebooks, or check out the API in the documentation.
 
@@ -66,15 +69,13 @@ If you use the `bicm` module, please cite its location on Github
 [https://github.com/mat701/BiCM](https://github.com/mat701/BiCM) and the
 original articles [Vallarano2021], [Saracco2015] and [Saracco2017].
 
-If you use the weighted models BiWCM_c or BiMCM you might consider citing also the following paper introducing the solvers of this package:
-
-* Bruno, M., Mazzilli, D., Patelli, A., Squartini, T., and Saracco, F. \
-    *Inferring comparative advantage via entropy maximization.* \
-    In preparation
+If you use the weighted models BiWCM_c or BiMCM you might consider citing also the paper introducing the solvers of this package [Bruno2023].
 
 ### References
 
 [Vallarano2021] [N. Vallarano, M. Bruno, E. Marchese, G. Trapani, F. Saracco, T. Squartini, G. Cimini, M. Zanon, Fast and scalable likelihood maximization for Exponential Random Graph Models with local constraints, Nature Scientific Reports](https://doi.org/10.1038/s41598-021-93830-4)
+
+[Bruno2023] [M. Bruno, D. Mazzilli, A. Patelli, T. Squartini, F. Saracco, Inferring comparative advantage via entropy maximization. Journal of Physics: Complexity, Volume 4, Number 4 (2023)](https://doi.org/10.1088/2632-072X/ad1411)
 
 [Saracco2015] [F. Saracco, R. Di Clemente, A. Gabrielli, T. Squartini, Randomizing bipartite networks: the case of the World Trade Web, Scientific Reports 5, 10595 (2015)](http://www.nature.com/articles/srep10595).
 

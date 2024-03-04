@@ -22,7 +22,7 @@ copyright = '2020, Matteo Bruno'
 author = 'Matteo Bruno'
 
 # The full version, including alpha/beta/rc tags
-release = '3.0.6'
+release = '3.1'
 
 
 # -- General configuration ---------------------------------------------------

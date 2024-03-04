@@ -1249,8 +1249,14 @@ class BipartiteGraph:
         if self.weighted:
             print('Weighted projection not yet implemented.')
             return
-        if alpha == 1:
-            print('Warning: alpha=1 will yield a full projection.')
+        if self.adj_list is None and self.biadjacency is None:
+            print('''
+            Without the edges I can't compute the projection. 
+            Use set_biadjacency_matrix, set_adjacency_list or set_edgelist to add edges.
+            ''')
+            return
+        if alpha >= 1:
+            print('Warning: alpha larger than 1 will yield a full projection.')
         if threads_num is None:
             if system() == 'Windows':
                 threads_num = 1
@@ -1261,26 +1267,19 @@ class BipartiteGraph:
                 threads_num = 1
                 print('Parallel processes not yet implemented on Windows, computing anyway...')
         self.threads_num = threads_num
-        if self.adj_list is None and self.biadjacency is None:
-            print('''
-            Without the edges I can't compute the projection. 
-            Use set_biadjacency_matrix, set_adjacency_list or set_edgelist to add edges.
-            ''')
-            return
+        if not self.is_randomized:
+            print('First I have to compute the BiCM. Computing...')
+            self.solve_tool()
+        if rows:
+            self.rows_pvals = self._projection_calculator()
+            self.projected_rows_adj_list = self._projection_from_pvals(alpha=alpha,
+                                                                       validation_method=validation_method)
+            self.is_rows_projected = True
         else:
-            if not self.is_randomized:
-                print('First I have to compute the BiCM. Computing...')
-                self.solve_tool()
-            if rows:
-                self.rows_pvals = self._projection_calculator()
-                self.projected_rows_adj_list = self._projection_from_pvals(alpha=alpha,
-                                                                           validation_method=validation_method)
-                self.is_rows_projected = True
-            else:
-                self.cols_pvals = self._projection_calculator()
-                self.projected_cols_adj_list = self._projection_from_pvals(alpha=alpha,
-                                                                           validation_method=validation_method)
-                self.is_cols_projected = True
+            self.cols_pvals = self._projection_calculator()
+            self.projected_cols_adj_list = self._projection_from_pvals(alpha=alpha,
+                                                                       validation_method=validation_method)
+            self.is_cols_projected = True
                 
     def compute_weighted_pvals_mat(self):
         """
@@ -1331,9 +1330,10 @@ class BipartiteGraph:
     def _pvals_validator(self, pval_list, alpha=0.05, validation_method='fdr'):
         sorted_pvals = np.sort(pval_list)
         if self.rows_projection:
-            multiplier = 2 * alpha / (self.n_rows * (self.n_rows - 1))
+            tests_num = (self.n_rows * (self.n_rows - 1)) / 2
         else:
-            multiplier = 2 * alpha / (self.n_cols * (self.n_cols - 1))
+            tests_num = (self.n_cols * (self.n_cols - 1)) / 2
+        multiplier = alpha / tests_num
         eff_fdr_th = alpha
         if validation_method == 'bonferroni':
             eff_fdr_th = multiplier
@@ -1341,7 +1341,7 @@ class BipartiteGraph:
                 print('No V-motifs will be validated. Try increasing alpha')
         elif validation_method == 'fdr':
             try:
-                eff_fdr_pos = np.where(sorted_pvals <= (np.arange(1, len(sorted_pvals) + 1) * alpha * multiplier))[0][-1]
+                eff_fdr_pos = np.where(sorted_pvals <= (np.arange(1, len(sorted_pvals) + 1) * multiplier))[0][-1]
             except IndexError:
                 print('No V-motifs will be validated. Try increasing alpha')
                 eff_fdr_pos = 0
@@ -1359,15 +1359,22 @@ class BipartiteGraph:
             pvals_adj_list = self.rows_pvals
         else:
             pvals_adj_list = self.cols_pvals
+        projected_adj_list = dict([])
+        if alpha >= 1:
+            for node in range(len(self.adj_list) - 1):
+                for neighbor in np.arange(node + 1, len(self.adj_list)):
+                    if node not in projected_adj_list:
+                        projected_adj_list[node] = []
+                    projected_adj_list[node].append(neighbor)
+            return projected_adj_list
         for node in pvals_adj_list:
             for neighbor in pvals_adj_list[node]:
                 pval_list.append(pvals_adj_list[node][neighbor])
         eff_fdr_th = self._pvals_validator(pval_list, alpha=alpha, validation_method=validation_method)
-        projected_adj_list = dict([])
         for node in self.v_adj_list:
             for neighbor in self.v_adj_list[node]:
                 if pvals_adj_list[node][neighbor] <= eff_fdr_th:
-                    if node not in projected_adj_list.keys():
+                    if node not in projected_adj_list:
                         projected_adj_list[node] = []
                     projected_adj_list[node].append(neighbor)
         return projected_adj_list
@@ -1395,8 +1402,6 @@ class BipartiteGraph:
         :param str validation_method:  The type of validation to apply: 'global' for a global threshold,
          'fdr' for False Discovery Rate or 'bonferroni' for Bonferroni correction.
         """
-        if alpha == 1:
-            print('Warning: alpha=1 will yield a full projection.')
         if not self.is_rows_projected:
             self.compute_projection(rows=True, alpha=alpha, approx_method=method, threads_num=threads_num,
                                     progress_bar=progress_bar, validation_method=validation_method)
@@ -1434,8 +1439,6 @@ class BipartiteGraph:
         :param str fmt: the desired format for the output: adjacency_list (default) or edgelist
         :returns: the projected network on the columns layer, in the format specified by fmt
         """
-        if alpha == 1:
-            print('Warning: alpha=1 will yield a full projection.')
         if not self.is_cols_projected:
             self.compute_projection(rows=False,
                                     alpha=alpha, approx_method=method, threads_num=threads_num, progress_bar=progress_bar)

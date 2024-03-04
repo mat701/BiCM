@@ -10,6 +10,10 @@ The monopartite projection on one layer is introduced in::
 
     `Inferring monopartite projections of bipartite networks: an entropy-based approach, Saracco et al., 2017 New J. Phys. 19 053022 <https://doi.org/10.1088/1367-2630/aa6b38>`_ .
 
+The weighted model BiWCM is introduced in::
+
+    `Inferring comparative advantage via entropy maximization, Bruno et al., 2023 Journal of Physics: Complexity, Volume 4, Number 4 <https://doi.org/10.1088/2632-072X/ad1411>`_ .
+
 Basic functionalities
 =====================================
 

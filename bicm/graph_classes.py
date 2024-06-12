@@ -179,10 +179,10 @@ class BipartiteGraph:
                 self.continuous_weights = not np.all(np.equal(np.mod(self.biadjacency, 1), 0))
             if self.continuous_weights or np.max(self.biadjacency) > 1:
                 self.weighted = True
-                self.rows_seq = self.biadjacency.sum(1)
-                self.cols_seq = self.biadjacency.sum(0)
-                self.rows_deg = (self.biadjacency != 0).sum(1)
-                self.cols_deg = (self.biadjacency != 0).sum(0)
+                self.rows_seq = np.array(self.biadjacency.sum(1)).ravel()
+                self.cols_seq = np.array(self.biadjacency.sum(0)).ravel()
+                self.rows_deg = np.array((self.biadjacency != 0).sum(1)).ravel()
+                self.cols_deg = np.array((self.biadjacency != 0).sum(0)).ravel()
                 if self.continuous_weights:
                     print('Continuous weighted model: BiWCM_c')
                 else:
@@ -394,7 +394,14 @@ class BipartiteGraph:
         bad_cols = np.array([])
         self.full_rows_num = 0
         self.full_cols_num = 0
-        if np.any(np.isin(self.rows_deg, (0, self.n_cols))) or np.any(np.isin(self.cols_deg, (0, self.n_rows))):
+        flag_degrees = False
+        if self.weighted:
+            if np.any(self.rows_deg == 0) or np.any(self.cols_deg == 0):
+                flag_degrees = True
+        else:
+            if np.any(np.isin(self.rows_deg, (0, self.n_cols))) or np.any(np.isin(self.cols_deg, (0, self.n_rows))):
+                flag_degrees = True
+        if flag_degrees:
             print('''
                       WARNING: this system has at least a node that is disconnected or connected to all nodes
                        of the opposite layer. This may cause some convergence issues.
@@ -861,9 +868,14 @@ class BipartiteGraph:
         Internal method for computing the solution of the BiCM via degree sequences.
         """
         self._initialize_fitnesses()
-        rows_deg = self.rows_deg[self.nonfixed_rows]
-        cols_deg = self.cols_deg[self.nonfixed_cols]
-        self._initialize_problem(rows_deg=rows_deg, cols_deg=cols_deg)
+        if self.weighted:
+            rows_seq = self.rows_seq[self.nonfixed_rows]
+            cols_seq = self.cols_seq[self.nonfixed_cols]
+            self._initialize_problem(rows_deg=rows_seq, cols_deg=cols_seq)
+        else:
+            rows_deg = self.rows_deg[self.nonfixed_rows]
+            cols_deg = self.cols_deg[self.nonfixed_cols]
+            self._initialize_problem(rows_deg=rows_deg, cols_deg=cols_deg)
         if self.method == 'root':
             sol = self._solve_root()
         else:

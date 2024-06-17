@@ -1,6 +1,6 @@
 import numpy as np
 from numba import jit
-import bicm.solver_functions as sof
+import bicm.solver_functions as bsof
 
 
 # BiCM functions
@@ -329,7 +329,7 @@ def linsearch_fun_BiCM(xx, args):
     i = 0
     s_old = -step_fun(x, arg_step_fun)
     while (
-            sof.sufficient_decrease_condition(
+            bsof.sufficient_decrease_condition(
                 s_old, -step_fun(x + alfa * dx, arg_step_fun), alfa, f, dx
             )
             is False
@@ -407,7 +407,7 @@ def linsearch_fun_BiCM_exp(xx, args):
     i = 0
     s_old = -step_fun(x, arg_step_fun)
     while (
-            sof.sufficient_decrease_condition(
+            bsof.sufficient_decrease_condition(
                 s_old, -step_fun(x + alfa * dx, arg_step_fun), alfa, f, dx
             )
             is False

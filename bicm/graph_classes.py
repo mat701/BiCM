@@ -8,9 +8,9 @@ import numpy as np
 import scipy.sparse
 import scipy
 from scipy.stats import norm, poisson
-import bicm.models_functions as mof
-import bicm.solver_functions as sof
-import bicm.network_functions as nef
+import bicm.models_functions as bmof
+import bicm.solver_functions as bsof
+import bicm.network_functions as bnef
 from tqdm import tqdm
 import bicm.poibin as pb
 from functools import partial
@@ -189,7 +189,7 @@ class BipartiteGraph:
                     print('Discrete weighted model: BiWCM_d')
             else:
                 self.adj_list, self.inv_adj_list, self.rows_deg, self.cols_deg = \
-                    nef.adjacency_list_from_biadjacency(self.biadjacency)
+                    bnef.adjacency_list_from_biadjacency(self.biadjacency)
 
             self.n_rows = len(self.rows_deg)
             self.n_cols = len(self.cols_deg)
@@ -205,7 +205,7 @@ class BipartiteGraph:
                     'biadjacency matrix')
             else:
                 self.adj_list, self.inv_adj_list, self.rows_deg, self.cols_deg, self.rows_dict, self.cols_dict = \
-                    nef.adjacency_list_from_edgelist_bipartite(edgelist)
+                    bnef.adjacency_list_from_edgelist_bipartite(edgelist)
                 self.inv_rows_dict = {v: k for k, v in self.rows_dict.items()}
                 self.inv_cols_dict = {v: k for k, v in self.cols_dict.items()}
                 self.is_initialized = True
@@ -215,7 +215,7 @@ class BipartiteGraph:
                 raise TypeError('The adjacency list must be passed as a dictionary')
             else:
                 self.adj_list, self.inv_adj_list, self.rows_deg, self.cols_deg, self.rows_dict, self.cols_dict = \
-                    nef.adjacency_list_from_adjacency_list_bipartite(adjacency_list)
+                    bnef.adjacency_list_from_adjacency_list_bipartite(adjacency_list)
                 self.inv_rows_dict = {v: k for k, v in self.rows_dict.items()}
                 self.inv_cols_dict = {v: k for k, v in self.cols_dict.items()}
                 self.is_initialized = True
@@ -452,90 +452,90 @@ class BipartiteGraph:
             self.args = (self.r_rows_deg, self.r_cols_deg, self.rows_multiplicity, self.cols_multiplicity)
             if self.continuous_weights:
                 d_fun = {
-                    'newton': lambda x: - mof.loglikelihood_prime_biwcm_c(x, self.args),
-                    'quasinewton': lambda x: - mof.loglikelihood_prime_biwcm_c(x, self.args),
-                    'fixed-point': lambda x: mof.iterative_biwcm_c(x, self.args),
-                    'newton_exp': lambda x: - mof.loglikelihood_prime_biwcm_c_exp(x, self.args),
-                    'quasinewton_exp': lambda x: - mof.loglikelihood_prime_biwcm_c_exp(x, self.args),
-                    'fixed-point_exp': lambda x: mof.iterative_biwcm_c_exp(x, self.args),
+                    'newton': lambda x: - bmof.loglikelihood_prime_biwcm_c(x, self.args),
+                    'quasinewton': lambda x: - bmof.loglikelihood_prime_biwcm_c(x, self.args),
+                    'fixed-point': lambda x: bmof.iterative_biwcm_c(x, self.args),
+                    'newton_exp': lambda x: - bmof.loglikelihood_prime_biwcm_c_exp(x, self.args),
+                    'quasinewton_exp': lambda x: - bmof.loglikelihood_prime_biwcm_c_exp(x, self.args),
+                    'fixed-point_exp': lambda x: bmof.iterative_biwcm_c_exp(x, self.args),
                 }
                 d_fun_jac = {
-                    'newton': lambda x: - mof.loglikelihood_hessian_biwcm_c(x, self.args),
-                    'quasinewton': lambda x: - mof.loglikelihood_hessian_diag_biwcm_c(x, self.args),
+                    'newton': lambda x: - bmof.loglikelihood_hessian_biwcm_c(x, self.args),
+                    'quasinewton': lambda x: - bmof.loglikelihood_hessian_diag_biwcm_c(x, self.args),
                     'fixed-point': None,
-                    'newton_exp': lambda x: - mof.loglikelihood_hessian_biwcm_c_exp(x, self.args),
-                    'quasinewton_exp': lambda x: - mof.loglikelihood_hessian_diag_biwcm_c_exp(x, self.args),
+                    'newton_exp': lambda x: - bmof.loglikelihood_hessian_biwcm_c_exp(x, self.args),
+                    'quasinewton_exp': lambda x: - bmof.loglikelihood_hessian_diag_biwcm_c_exp(x, self.args),
                     'fixed-point_exp': None,
                 }
                 d_fun_step = {
                     # 'newton': lambda x: - mof.loglikelihood_biwcm_c(x, self.args),
                     # 'quasinewton': lambda x: - mof.loglikelihood_biwcm_c(x, self.args),
                     # 'fixed-point': lambda x: - mof.loglikelihood_biwcm_c(x, self.args),
-                    'newton': lambda x: mof.mrse_biwcm_c(x, self.args),
-                    'quasinewton': lambda x: mof.mrse_biwcm_c(x, self.args),
-                    'fixed-point': lambda x: mof.mrse_biwcm_c(x, self.args),
-                    'newton_exp': lambda x: - mof.loglikelihood_biwcm_c_exp(x, self.args),
-                    'quasinewton_exp': lambda x: - mof.loglikelihood_biwcm_c_exp(x, self.args),
-                    'fixed-point_exp': lambda x: - mof.loglikelihood_biwcm_c_exp(x, self.args),
+                    'newton': lambda x: bmof.mrse_biwcm_c(x, self.args),
+                    'quasinewton': lambda x: bmof.mrse_biwcm_c(x, self.args),
+                    'fixed-point': lambda x: bmof.mrse_biwcm_c(x, self.args),
+                    'newton_exp': lambda x: - bmof.loglikelihood_biwcm_c_exp(x, self.args),
+                    'quasinewton_exp': lambda x: - bmof.loglikelihood_biwcm_c_exp(x, self.args),
+                    'fixed-point_exp': lambda x: - bmof.loglikelihood_biwcm_c_exp(x, self.args),
                 }
             elif self.weighted:
                 d_fun = {
-                    'newton': lambda x: - mof.loglikelihood_prime_biwcm_d(x, self.args),
-                    'quasinewton': lambda x: - mof.loglikelihood_prime_biwcm_d(x, self.args),
-                    'fixed-point': lambda x: mof.iterative_biwcm_d(x, self.args),
-                    'newton_exp': lambda x: - mof.loglikelihood_prime_biwcm_d_exp(x, self.args),
-                    'quasinewton_exp': lambda x: - mof.loglikelihood_prime_biwcm_d_exp(x, self.args),
-                    'fixed-point_exp': lambda x: mof.iterative_biwcm_d_exp(x, self.args),
+                    'newton': lambda x: - bmof.loglikelihood_prime_biwcm_d(x, self.args),
+                    'quasinewton': lambda x: - bmof.loglikelihood_prime_biwcm_d(x, self.args),
+                    'fixed-point': lambda x: bmof.iterative_biwcm_d(x, self.args),
+                    'newton_exp': lambda x: - bmof.loglikelihood_prime_biwcm_d_exp(x, self.args),
+                    'quasinewton_exp': lambda x: - bmof.loglikelihood_prime_biwcm_d_exp(x, self.args),
+                    'fixed-point_exp': lambda x: bmof.iterative_biwcm_d_exp(x, self.args),
                 }
                 d_fun_jac = {
-                    'newton': lambda x: - mof.loglikelihood_hessian_biwcm_d(x, self.args),
-                    'quasinewton': lambda x: - mof.loglikelihood_hessian_diag_biwcm_d(x, self.args),
+                    'newton': lambda x: - bmof.loglikelihood_hessian_biwcm_d(x, self.args),
+                    'quasinewton': lambda x: - bmof.loglikelihood_hessian_diag_biwcm_d(x, self.args),
                     'fixed-point': None,
-                    'newton_exp': lambda x: - mof.loglikelihood_hessian_biwcm_d_exp(x, self.args),
-                    'quasinewton_exp': lambda x: - mof.loglikelihood_hessian_diag_biwcm_d_exp(x, self.args),
+                    'newton_exp': lambda x: - bmof.loglikelihood_hessian_biwcm_d_exp(x, self.args),
+                    'quasinewton_exp': lambda x: - bmof.loglikelihood_hessian_diag_biwcm_d_exp(x, self.args),
                     'fixed-point_exp': None,
                 }
                 d_fun_step = {
                     # 'newton': lambda x: - mof.loglikelihood_biwcm_d(x, self.args),
                     # 'quasinewton': lambda x: - mof.loglikelihood_biwcm_d(x, self.args),
                     # 'fixed-point': lambda x: - mof.loglikelihood_biwcm_d(x, self.args),
-                    'newton': lambda x: mof.mrse_biwcm_d(x, self.args),
-                    'quasinewton': lambda x: mof.mrse_biwcm_d(x, self.args),
-                    'fixed-point': lambda x: mof.mrse_biwcm_d(x, self.args),
-                    'newton_exp': lambda x: - mof.loglikelihood_biwcm_d_exp(x, self.args),
-                    'quasinewton_exp': lambda x: - mof.loglikelihood_biwcm_d_exp(x, self.args),
-                    'fixed-point_exp': lambda x: - mof.loglikelihood_biwcm_d_exp(x, self.args),
+                    'newton': lambda x: bmof.mrse_biwcm_d(x, self.args),
+                    'quasinewton': lambda x: bmof.mrse_biwcm_d(x, self.args),
+                    'fixed-point': lambda x: bmof.mrse_biwcm_d(x, self.args),
+                    'newton_exp': lambda x: - bmof.loglikelihood_biwcm_d_exp(x, self.args),
+                    'quasinewton_exp': lambda x: - bmof.loglikelihood_biwcm_d_exp(x, self.args),
+                    'fixed-point_exp': lambda x: - bmof.loglikelihood_biwcm_d_exp(x, self.args),
                 }
             else:
                 d_fun = {
-                    'newton': lambda x: - mof.loglikelihood_prime_bicm(x, self.args),
-                    'quasinewton': lambda x: - mof.loglikelihood_prime_bicm(x, self.args),
-                    'fixed-point': lambda x: mof.iterative_bicm(x, self.args),
-                    'newton_exp': lambda x: - mof.loglikelihood_prime_bicm_exp(x, self.args),
-                    'quasinewton_exp': lambda x: - mof.loglikelihood_prime_bicm_exp(x, self.args),
-                    'fixed-point_exp': lambda x: mof.iterative_bicm_exp(x, self.args),
+                    'newton': lambda x: - bmof.loglikelihood_prime_bicm(x, self.args),
+                    'quasinewton': lambda x: - bmof.loglikelihood_prime_bicm(x, self.args),
+                    'fixed-point': lambda x: bmof.iterative_bicm(x, self.args),
+                    'newton_exp': lambda x: - bmof.loglikelihood_prime_bicm_exp(x, self.args),
+                    'quasinewton_exp': lambda x: - bmof.loglikelihood_prime_bicm_exp(x, self.args),
+                    'fixed-point_exp': lambda x: bmof.iterative_bicm_exp(x, self.args),
                 }
                 d_fun_jac = {
-                    'newton': lambda x: - mof.loglikelihood_hessian_bicm(x, self.args),
-                    'quasinewton': lambda x: - mof.loglikelihood_hessian_diag_bicm(x, self.args),
+                    'newton': lambda x: - bmof.loglikelihood_hessian_bicm(x, self.args),
+                    'quasinewton': lambda x: - bmof.loglikelihood_hessian_diag_bicm(x, self.args),
                     'fixed-point': None,
-                    'newton_exp': lambda x: - mof.loglikelihood_hessian_bicm_exp(x, self.args),
-                    'quasinewton_exp': lambda x: - mof.loglikelihood_hessian_diag_bicm_exp(x, self.args),
+                    'newton_exp': lambda x: - bmof.loglikelihood_hessian_bicm_exp(x, self.args),
+                    'quasinewton_exp': lambda x: - bmof.loglikelihood_hessian_diag_bicm_exp(x, self.args),
                     'fixed-point_exp': None,
                 }
                 d_fun_step = {
-                    'newton': lambda x: - mof.loglikelihood_bicm(x, self.args),
-                    'quasinewton': lambda x: - mof.loglikelihood_bicm(x, self.args),
-                    'fixed-point': lambda x: - mof.loglikelihood_bicm(x, self.args),
-                    'newton_exp': lambda x: - mof.loglikelihood_bicm_exp(x, self.args),
-                    'quasinewton_exp': lambda x: - mof.loglikelihood_bicm_exp(x, self.args),
-                    'fixed-point_exp': lambda x: - mof.loglikelihood_bicm_exp(x, self.args),
+                    'newton': lambda x: - bmof.loglikelihood_bicm(x, self.args),
+                    'quasinewton': lambda x: - bmof.loglikelihood_bicm(x, self.args),
+                    'fixed-point': lambda x: - bmof.loglikelihood_bicm(x, self.args),
+                    'newton_exp': lambda x: - bmof.loglikelihood_bicm_exp(x, self.args),
+                    'quasinewton_exp': lambda x: - bmof.loglikelihood_bicm_exp(x, self.args),
+                    'fixed-point_exp': lambda x: - bmof.loglikelihood_bicm_exp(x, self.args),
                 }
 
             if self.exp:
-                self.hessian_regulariser = sof.matrix_regulariser_function_eigen_based
+                self.hessian_regulariser = bsof.matrix_regulariser_function_eigen_based
             else:
-                self.hessian_regulariser = sof.matrix_regulariser_function
+                self.hessian_regulariser = bsof.matrix_regulariser_function
             
             if self.exp:
                 method = self.method + '_exp'
@@ -545,26 +545,26 @@ class BipartiteGraph:
             # lins_args = (d_fun_step[method], self.args)
             if self.continuous_weights:
                 if self.exp:
-                    lins_args = (mof.loglikelihood_biwcm_c_exp, self.args)
+                    lins_args = (bmof.loglikelihood_biwcm_c_exp, self.args)
                 else:
-                    lins_args = (mof.loglikelihood_biwcm_c, self.args)
+                    lins_args = (bmof.loglikelihood_biwcm_c, self.args)
             elif self.weighted:
                 if self.exp:
-                    lins_args = (mof.loglikelihood_biwcm_d_exp, self.args)
+                    lins_args = (bmof.loglikelihood_biwcm_d_exp, self.args)
                 else:
-                    lins_args = (mof.loglikelihood_biwcm_d, self.args)
+                    lins_args = (bmof.loglikelihood_biwcm_d, self.args)
             else:
                 if self.exp:
-                    lins_args = (mof.loglikelihood_bicm_exp, self.args)
+                    lins_args = (bmof.loglikelihood_bicm_exp, self.args)
                 else:
-                    lins_args = (mof.loglikelihood_bicm, self.args)
+                    lins_args = (bmof.loglikelihood_bicm, self.args)
             lins_fun = {
-                'newton': lambda x: mof.linsearch_fun_BiCM(x, lins_args),
-                'quasinewton': lambda x: mof.linsearch_fun_BiCM(x, lins_args),
-                'fixed-point': lambda x: mof.linsearch_fun_BiCM_fixed(x),
-                'newton_exp': lambda x: mof.linsearch_fun_BiCM_exp(x, lins_args),
-                'quasinewton_exp': lambda x: mof.linsearch_fun_BiCM_exp(x, lins_args),
-                'fixed-point_exp': lambda x: mof.linsearch_fun_BiCM_exp_fixed(x),
+                'newton': lambda x: bmof.linsearch_fun_BiCM(x, lins_args),
+                'quasinewton': lambda x: bmof.linsearch_fun_BiCM(x, lins_args),
+                'fixed-point': lambda x: bmof.linsearch_fun_BiCM_fixed(x),
+                'newton_exp': lambda x: bmof.linsearch_fun_BiCM_exp(x, lins_args),
+                'quasinewton_exp': lambda x: bmof.linsearch_fun_BiCM_exp(x, lins_args),
+                'fixed-point_exp': lambda x: bmof.linsearch_fun_BiCM_exp_fixed(x),
             }
             
             try:
@@ -579,16 +579,16 @@ class BipartiteGraph:
         """
         Equations for the *root* solver
         """
-        mof.eqs_root(x, self.r_rows_deg, self.r_cols_deg,
-                     self.rows_multiplicity, self.cols_multiplicity,
-                     self.r_n_rows, self.r_n_cols, self.residuals)
+        bmof.eqs_root(x, self.r_rows_deg, self.r_cols_deg,
+                      self.rows_multiplicity, self.cols_multiplicity,
+                      self.r_n_rows, self.r_n_cols, self.residuals)
 
     def _jacobian_root(self, x):
         """
         Jacobian for the *root* solver
         """
-        mof.jac_root(x, self.rows_multiplicity, self.cols_multiplicity,
-                     self.r_n_rows, self.r_n_cols, self.J_T)
+        bmof.jac_root(x, self.rows_multiplicity, self.cols_multiplicity,
+                      self.r_n_rows, self.r_n_cols, self.J_T)
 
     def _residuals_jacobian(self, x):
         """
@@ -803,14 +803,14 @@ class BipartiteGraph:
         if self.method != 'root':
             if self.continuous_weights:
                 if self.exp:
-                    self.loglikelihood = mof.loglikelihood_biwcm_c_exp(self.solution_array, self.args)
+                    self.loglikelihood = bmof.loglikelihood_biwcm_c_exp(self.solution_array, self.args)
                 else:
-                    self.loglikelihood = mof.loglikelihood_biwcm_c(self.solution_array, self.args)
+                    self.loglikelihood = bmof.loglikelihood_biwcm_c(self.solution_array, self.args)
             elif self.weighted:
                 if self.exp:
-                    self.loglikelihood = mof.loglikelihood_biwcm_d_exp(self.solution_array, self.args)
+                    self.loglikelihood = bmof.loglikelihood_biwcm_d_exp(self.solution_array, self.args)
                 else:
-                    self.loglikelihood = mof.loglikelihood_biwcm_d(self.solution_array, self.args)
+                    self.loglikelihood = bmof.loglikelihood_biwcm_d(self.solution_array, self.args)
             else:
                 self.loglikelihood = self.step_fun(self.solution_array)
         # Reset solver lambda functions for multiprocessing compatibility
@@ -838,7 +838,7 @@ class BipartiteGraph:
                 sol = self._solve_root()
             else:
                 x0 = self.x0
-                sol = sof.solver(
+                sol = bsof.solver(
                     x0,
                     fun=self.fun,
                     fun_jac=self.fun_jac,
@@ -856,11 +856,11 @@ class BipartiteGraph:
                 )
             self._set_solved_problem(sol)
             if self.continuous_weights:
-                r_avg_mat = nef.biwcm_c_from_fitnesses(self.x[self.nonfixed_rows], self.y[self.nonfixed_cols])
+                r_avg_mat = bnef.biwcm_c_from_fitnesses(self.x[self.nonfixed_rows], self.y[self.nonfixed_cols])
             elif self.weighted:
-                r_avg_mat = nef.biwcm_d_from_fitnesses(self.x[self.nonfixed_rows], self.y[self.nonfixed_cols])
+                r_avg_mat = bnef.biwcm_d_from_fitnesses(self.x[self.nonfixed_rows], self.y[self.nonfixed_cols])
             else:
-                r_avg_mat = nef.bicm_from_fitnesses(self.x[self.nonfixed_rows], self.y[self.nonfixed_cols])
+                r_avg_mat = bnef.bicm_from_fitnesses(self.x[self.nonfixed_rows], self.y[self.nonfixed_cols])
             self.avg_mat[self.nonfixed_rows[:, None], self.nonfixed_cols] = np.copy(r_avg_mat)
 
     def _solve_bicm_light(self):
@@ -880,7 +880,7 @@ class BipartiteGraph:
             sol = self._solve_root()
         else:
             x0 = self.x0
-            sol = sof.solver(
+            sol = bsof.solver(
                 x0,
                 fun=self.fun,
                 fun_jac=self.fun_jac,
@@ -1076,7 +1076,7 @@ class BipartiteGraph:
         if self.avg_mat is not None:
             return self.avg_mat
         else:
-            self.avg_mat = nef.bicm_from_fitnesses(self.x, self.y)
+            self.avg_mat = bnef.bicm_from_fitnesses(self.x, self.y)
             return self.avg_mat
 
     def get_bicm_fitnesses(self):
@@ -1301,9 +1301,9 @@ class BipartiteGraph:
             assert self.edgelist is not None or self.adj_list is not None, 'Graph links must be given in some format!'
             print('Computing biadjacency matrix...')
             if self.edgelist is not None:
-                self.biadjacency = nef.biadjacency_from_edgelist(self.edgelist)[0]
+                self.biadjacency = bnef.biadjacency_from_edgelist(self.edgelist)[0]
             elif self.adj_list is not None:
-                self.biadjacency = nef.biadjacency_from_adjacency_list(self.adj_list)
+                self.biadjacency = bnef.biadjacency_from_adjacency_list(self.adj_list)
         if not self.is_randomized:
             print('First I have to compute the BiCM. Computing...')
             self.solve_tool()
@@ -1429,7 +1429,7 @@ class BipartiteGraph:
         if fmt == 'adjacency_list':
             return adj_list_to_return
         elif fmt == 'edgelist':
-            return nef.edgelist_from_adjacency_list_bipartite(adj_list_to_return)
+            return bnef.edgelist_from_adjacency_list_bipartite(adj_list_to_return)
 
     def get_cols_projection(self,
                             alpha=0.05,
@@ -1465,7 +1465,7 @@ class BipartiteGraph:
         if fmt == 'adjacency_list':
             return adj_list_to_return
         elif fmt == 'edgelist':
-            return nef.edgelist_from_adjacency_list_bipartite(adj_list_to_return)
+            return bnef.edgelist_from_adjacency_list_bipartite(adj_list_to_return)
         
     def _compute_projected_pvals_mat(self, layer='rows'):
         """

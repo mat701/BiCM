@@ -72,6 +72,70 @@ def sample_bicm(avg_mat):
     return np.array(avg_mat > np.reshape(np.random.sample(dim1 * dim2), (dim1, dim2)), dtype=int)
 
 
+def sample_biwcm_d(x, y=None, exp=False):
+    """
+    Samples the biwcm_d model. Returns a sampled biadjacency matrix.
+    Works by passing only a avg matrix or directly the fitnesses of both layers.
+    If exp=True, it supposes that the fitness exponents theta and eta have been passed.
+    """
+    if not isinstance(x, np.ndarray):
+        x = np.array(x)
+    if y is not None: # If the avg_mat has been passed
+        if not isinstance(y, np.ndarray):
+            y = np.array(y)
+        if exp: # If the theta_x and eta_y have been passed
+            x = np.exp(-x)
+            y = np.exp(-y)
+        x = biwcm_d_from_fitnesses(x, y)
+    out_x = np.zeros_like(x, dtype=int)
+    cols_sum = x.sum(0)
+    rows_sum = x.sum(1)
+    if np.any(cols_sum == 0):
+        good_cols = np.where(cols_sum != 0)[0]
+        x = x[:, good_cols]
+    else:
+        good_cols = np.arange(len(cols_sum))
+    if np.any(rows_sum == 0):
+        good_rows = np.where(rows_sum != 0)[0]
+        x = x[good_rows, :]
+    else:
+        good_rows = np.arange(len(rows_sum))
+    out_x[good_rows[:, None], good_cols] = np.random.geometric(1 / (x - 1)) - 1 # Minus one for correct geometric with n exponent
+    return out_x
+
+
+def sample_biwcm_c(x, y=None, exp=False):
+    """
+    Samples the biwcm_c model. Returns a sampled biadjacency matrix.
+    Works by passing only a avg matrix or directly the fitnesses of both layers.
+    If exp=True, it supposes that the fitness exponents theta and eta have been passed.
+    """
+    if not isinstance(x, np.ndarray):
+        x = np.array(x)
+    if y is not None: # If the avg_mat has been passed
+        if not isinstance(y, np.ndarray):
+            y = np.array(y)
+        if exp: # If the theta_x and eta_y have been passed
+            x = np.exp(-x)
+            y = np.exp(-y)
+        x = biwcm_c_from_fitnesses(x, y)
+    out_x = np.zeros_like(x)
+    cols_sum = x.sum(0)
+    rows_sum = x.sum(1)
+    if np.any(cols_sum == 0):
+        good_cols = np.where(cols_sum != 0)[0]
+        x = x[:, good_cols]
+    else:
+        good_cols = np.arange(len(cols_sum))
+    if np.any(rows_sum == 0):
+        good_rows = np.where(rows_sum != 0)[0]
+        x = x[good_rows, :]
+    else:
+        good_rows = np.arange(len(rows_sum))
+    out_x[good_rows[:, None], good_cols] = np.random.exponential(scale=x)
+    return out_x
+
+
 def sample_bicm_edgelist(x, y):
     """
     Build an edgelist sampling from the fitnesses of a BiCM.

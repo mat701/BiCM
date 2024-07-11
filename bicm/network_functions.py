@@ -100,7 +100,7 @@ def sample_biwcm_d(x, y=None, exp=False):
         x = x[good_rows, :]
     else:
         good_rows = np.arange(len(rows_sum))
-    out_x[good_rows[:, None], good_cols] = np.random.geometric(1 / (x - 1)) - 1 # Minus one for correct geometric with n exponent
+    out_x[good_rows[:, None], good_cols] = np.random.geometric(1 / (x + 1)) - 1 # Minus one for correct geometric with n exponent
     return out_x
 
 

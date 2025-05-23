@@ -183,9 +183,9 @@ class BipartiteGraph:
                 self.cols_seq = np.array(self.biadjacency.sum(0)).ravel()
                 self.rows_deg = np.array((self.biadjacency != 0).sum(1)).ravel()
                 self.cols_deg = np.array((self.biadjacency != 0).sum(0)).ravel()
-                if self.continuous_weights:
+                if self.continuous_weights and self.verbose:
                     print('Continuous weighted model: BiWCM_c')
-                else:
+                elif self.verbose:
                     print('Discrete weighted model: BiWCM_d')
             else:
                 self.adj_list, self.inv_adj_list, self.rows_deg, self.cols_deg = \

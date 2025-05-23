@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="bicm",
-    version="3.3.1",
+    version="3.4.0",
     author="Matteo Bruno",
     author_email="matteobruno180@gmail.com",
     description="Package for bipartite configuration model",

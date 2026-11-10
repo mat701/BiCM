@@ -1,6 +1,6 @@
-﻿## BiCM package
+## BiCM package
 
-This is a Python package for the computation of the maximum entropy bipartite configuration model (BiCM) and the projection of bipartite networks on one layer. It was developed with Python 3.5.
+This is a Python package for the computation of the maximum entropy bipartite configuration model (BiCM) and the projection of bipartite networks on one layer. It requires Python 3.9 or later.
 
 You can install this package via pip: 
 
@@ -62,6 +62,16 @@ Alternatively, to customize the projection:
 Now version 3 is online, and you can use the package with weighted networks as well using the BiWCM models!
 
 See a more detailed walkthrough in **tests/bicm_test** or **tests/biwcm_test** notebooks, or check out the API in the documentation.
+
+## Development
+
+To install the package from source together with the test dependencies and run the test suite:
+
+    pip install -e ".[test]"
+    pytest
+
+The tests run automatically on GitHub Actions for every push and pull request.
+A new version is published to PyPI when a GitHub release is created with a tag matching the package version (e.g. `v3.5.0`).
 
 ## How to cite
 

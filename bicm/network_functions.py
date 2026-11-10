@@ -2,6 +2,8 @@
 This module contains several functions for bipartite networks.
 """
 
+import numbers
+
 import numpy as np
 import scipy.sparse
 from numba import jit
@@ -344,8 +346,10 @@ def biadjacency_from_adjacency_list(adj_list, fmt='array'):
     :param str fmt: the desired format of the output biadjacency matrix, either 'array' or 'sparse', optional
     """
     assert np.isin(fmt, ['array', 'sparse']), 'fmt must be either array or sparse'
-    assert isinstance(list(adj_list.keys())[0], (np.number)), 'Adjacency list must be numeric'
-    assert isinstance(list(adj_list.values())[0], (np.number)), 'Adjacency list must be numeric'
+    numeric = (numbers.Number, np.number)
+    assert isinstance(next(iter(adj_list)), numeric), 'Adjacency list must be numeric'
+    first_neighbours = next((v for v in adj_list.values() if len(v) > 0), [])
+    assert all(isinstance(i, numeric) for i in first_neighbours), 'Adjacency list must be numeric'
     rows_index = [k for k, v in adj_list.items() for _ in range(len(v))]
     cols_index = [i for ids in adj_list.values() for i in ids]
     biad_mat = scipy.sparse.csr_array(([1] * len(rows_index), (rows_index, cols_index)))

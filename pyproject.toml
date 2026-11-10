@@ -1,0 +1,51 @@
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "bicm"
+dynamic = ["version"]
+description = "Package for bipartite configuration model"
+readme = "README.md"
+license = { file = "LICENSE.txt" }
+authors = [{ name = "Matteo Bruno", email = "matteobruno180@gmail.com" }]
+requires-python = ">=3.9"
+dependencies = [
+    "numpy>=1.22",
+    "scipy>=1.8",
+    "numba>=0.56",
+    "tqdm>=4.52",
+]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Intended Audience :: Science/Research",
+    "Topic :: Scientific/Engineering :: Information Analysis",
+]
+
+[project.optional-dependencies]
+test = ["pytest>=7"]
+
+[project.urls]
+Homepage = "https://github.com/mat701/BiCM"
+Documentation = "https://bipartite-configuration-model.readthedocs.io/en/latest/"
+Source = "https://github.com/mat701/BiCM"
+
+[tool.setuptools]
+packages = ["bicm"]
+
+[tool.setuptools.dynamic]
+version = { attr = "bicm.__version__" }
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+filterwarnings = [
+    "ignore::numba.core.errors.NumbaExperimentalFeatureWarning",
+]

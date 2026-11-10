@@ -180,7 +180,7 @@ def edgelist_from_biadjacency(biadjacency):
     Build the edgelist of a bipartite network from its biadjacency matrix.
     Accounts for sparse matrices and returns a structured array.
     """
-    if scipy.sparse.isspmatrix(biadjacency):
+    if scipy.sparse.issparse(biadjacency):
         coords = biadjacency.nonzero()
         if np.sum(biadjacency.data != 1) > 0:
             raise ValueError('Only binary matrices')
@@ -293,7 +293,7 @@ def adjacency_list_from_biadjacency(biadjacency, return_inverse=True, return_deg
     If return_inverse is True, the inverse adjacency list is also returned.
     If return_degree_sequences is True, the two degree sequences are also returned.
     """
-    if scipy.sparse.isspmatrix(biadjacency):
+    if scipy.sparse.issparse(biadjacency):
         if np.sum(biadjacency.data != 1) > 0:
             raise ValueError('Only binary matrices')
         coords = biadjacency.nonzero()

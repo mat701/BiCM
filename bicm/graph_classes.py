@@ -158,7 +158,7 @@ class BipartiteGraph:
         """
         if biadjacency is not None:
             if not isinstance(biadjacency, (list, np.ndarray)):
-                if scipy.sparse.isspmatrix(biadjacency):
+                if scipy.sparse.issparse(biadjacency):
                     self.sparse = True
                 else:
                     raise TypeError(
@@ -442,8 +442,8 @@ class BipartiteGraph:
         setting the initial guess and setting the functions for the solver.
         The two parameters rows_deg and cols_deg are passed if there were some full or empty rows or columns.
         """
-        if ~self.is_reduced:
-            self.degree_reduction(rows_deg=rows_deg, cols_deg=cols_deg)  # if weighted rows_deg=rows_seq
+        # Always recompute the reduction: the degree sequences passed here depend on the solver call.
+        self.degree_reduction(rows_deg=rows_deg, cols_deg=cols_deg)  # if weighted rows_deg=rows_seq
         self._set_initial_guess()
         if self.method == 'root':
             self.J_T = np.zeros((self.r_dim, self.r_dim), dtype=np.float64)

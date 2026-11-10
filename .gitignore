@@ -1,1 +1,22 @@
+# IDE
 .idea/
+.vscode/
+
+# Python bytecode
+__pycache__/
+*.py[cod]
+
+# Packaging
+build/
+dist/
+*.egg-info/
+
+# Sphinx build output
+docs/build/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Virtual environments
+.venv/
+venv/

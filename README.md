@@ -79,7 +79,7 @@ If you use the `bicm` module, please cite its location on Github
 [https://github.com/mat701/BiCM](https://github.com/mat701/BiCM) and the
 original articles [Vallarano2021], [Saracco2015] and [Saracco2017].
 
-If you use the weighted models (BiWCM_c or BiWCM_d), please also cite [Bruno2023], the paper introducing them: [M. Bruno et al., J. Phys. Complex. 4, 045011 (2023)](https://doi.org/10.1088/2632-072X/ad1411).
+If you use the weighted models (BiWCM_c or BiWCM_d), please also cite [Bruno2023].
 
 ### References
 

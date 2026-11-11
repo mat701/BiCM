@@ -1,18 +1,18 @@
 BiCM documentation
 =====================================
 
-This package provides a tool for calculating the Bipartite Configuration Model (BiCM), as introduced in::
+This package provides a tool for calculating the Bipartite Configuration Model (BiCM), as introduced in:
 
     `Fast and scalable likelihood maximization for Exponential Random Graph Models with local constraints. Vallarano et al., Scientific Reports 11.1 (2021) <https://doi.org/10.1038/s41598-021-93830-4>`_,
     `Randomizing bipartite networks: the case of the World Trade Web. Saracco et al., Sci Rep 5, 10595 (2015). <https://doi.org/10.1038/srep10595>`_
 
-The monopartite projection on one layer is introduced in::
+The monopartite projection on one layer is introduced in:
 
     `Inferring monopartite projections of bipartite networks: an entropy-based approach, Saracco et al., 2017 New J. Phys. 19 053022 <https://doi.org/10.1088/1367-2630/aa6b38>`_ .
 
-The weighted model BiWCM is introduced in::
+The weighted models BiWCM_c and BiWCM_d are introduced in the following paper, which should also be cited when using them:
 
-    `Inferring comparative advantage via entropy maximization, Bruno et al., 2023 Journal of Physics: Complexity, Volume 4, Number 4 <https://doi.org/10.1088/2632-072X/ad1411>`_ .
+    `Inferring comparative advantage via entropy maximization, Bruno et al., J. Phys. Complex. 4, 045011 (2023), doi:10.1088/2632-072X/ad1411 <https://doi.org/10.1088/2632-072X/ad1411>`_ .
 
 Basic functionalities
 =====================================

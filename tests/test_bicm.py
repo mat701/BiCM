@@ -224,3 +224,67 @@ def test_higher_alpha_validates_more_links(pollinators):
     graph.compute_projection(rows=False, alpha=0.2, progress_bar=False, threads_num=1)
     loose = graph.get_cols_projection(alpha=0.2, progress_bar=False, threads_num=1, fmt="edgelist")
     assert len(loose) >= len(strict)
+
+
+# Warnings, seeds and parallel projections
+
+def test_square_matrix_warns():
+    with pytest.warns(bicm.BiCMWarning, match="square"):
+        BipartiteGraph(biadjacency=np.eye(5, dtype=int))
+
+
+def test_deprecated_solver_warns(small_binary):
+    graph = BipartiteGraph(biadjacency=small_binary)
+    with pytest.warns(FutureWarning, match="deprecated"):
+        graph.solve_bicm(print_error=False)
+
+
+def test_bicm_warnings_can_be_silenced(recwarn):
+    import warnings
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")
+        warnings.filterwarnings("ignore", category=bicm.BiCMWarning)
+        warnings.filterwarnings("ignore", module="numba")
+        BipartiteGraph(biadjacency=np.eye(5, dtype=int))
+
+
+def test_sampling_seed_is_reproducible(small_binary):
+    graph = BipartiteGraph(biadjacency=small_binary)
+    graph.solve_tool(print_error=False)
+    avg_mat = graph.get_bicm_matrix()
+    np.testing.assert_array_equal(sample_bicm(avg_mat, seed=1), sample_bicm(avg_mat, seed=1))
+    np.testing.assert_array_equal(sample_bicm(avg_mat, seed=1),
+                                  sample_bicm(avg_mat, seed=np.random.default_rng(1)))
+    assert sample_bicm_edgelist(graph.x, graph.y, seed=2) == sample_bicm_edgelist(graph.x, graph.y, seed=2)
+
+
+def test_sampling_without_seed_uses_global_state(small_binary):
+    avg_mat = BipartiteGraph(biadjacency=small_binary).get_bicm_matrix()
+    np.random.seed(3)
+    first = sample_bicm(avg_mat)
+    np.random.seed(3)
+    np.testing.assert_array_equal(sample_bicm(avg_mat), first)
+
+
+def test_poibin_projection_single_process():
+    # Used to fail with a KeyError when threads_num=1 and progress_bar=False.
+    rng = np.random.default_rng(0)
+    mat = (rng.random((30, 80)) < 0.08).astype(int)
+    mat[:5, :15] = 1  # a block of similar rows, so that some links get validated
+    mat = mat[:, mat.sum(0) > 0]
+    serial = BipartiteGraph(biadjacency=mat)
+    serial.compute_projection(rows=True, approx_method="poibin", threads_num=1, progress_bar=False)
+    with_bar = BipartiteGraph(biadjacency=mat)
+    with_bar.compute_projection(rows=True, approx_method="poibin", threads_num=1, progress_bar=True)
+    links = sorted(map(tuple, serial.get_rows_projection(fmt="edgelist")))
+    assert len(links) > 0
+    assert links == sorted(map(tuple, with_bar.get_rows_projection(fmt="edgelist")))
+
+
+def test_parallel_projection_matches_serial(pollinators):
+    serial = BipartiteGraph(biadjacency=pollinators[0])
+    serial.compute_projection(rows=True, threads_num=1, progress_bar=False)
+    parallel = BipartiteGraph(biadjacency=pollinators[0])
+    parallel.compute_projection(rows=True, threads_num=2, progress_bar=False)
+    assert sorted(map(tuple, serial.get_rows_projection(fmt="edgelist"))) == \
+        sorted(map(tuple, parallel.get_rows_projection(fmt="edgelist")))

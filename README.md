@@ -59,6 +59,24 @@ Alternatively, to customize the projection:
 
     myGraph.compute_projection(rows=True, alpha=0.05, method='poisson', threads_num=4, progress_bar=True)
     
+### Warnings, logging and reproducibility
+
+Problems found while solving or projecting (for example a solver that did not converge) are reported as Python warnings of category `bicm.BiCMWarning`, so they can be filtered:
+
+    import warnings
+    import bicm
+    warnings.filterwarnings("ignore", category=bicm.BiCMWarning)
+
+Informative messages (for example "Computing the BiCM...") go to the `bicm` logger and are hidden by default. To show them:
+
+    import logging
+    logging.basicConfig()
+    logging.getLogger("bicm").setLevel(logging.INFO)
+
+The sampling functions accept a `seed` argument (an integer or a `numpy.random.Generator`) to get reproducible samples, e.g. `sample_bicm(avg_mat, seed=42)`. Without it, numpy's global random state is used as in previous versions.
+
+Projections use several processes by default. On macOS, scripts must put their code under `if __name__ == "__main__":` for this to work, or pass `threads_num=1`. On Windows projections always run in a single process.
+
 Now version 3 is online, and you can use the package with weighted networks as well using the BiWCM models!
 
 See a more detailed walkthrough in **tests/bicm_test** or **tests/biwcm_test** notebooks, or check out the API in the documentation.

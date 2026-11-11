@@ -13,10 +13,12 @@ import bicm.solver_functions as bsof
 import bicm.network_functions as bnef
 from tqdm import tqdm
 import bicm.poibin as pb
+import bicm._utils as _bu
 from functools import partial
 from platform import system
 
 if system() != 'Windows':
+    # Not used here any more (see _utils.get_pool), kept for code importing it from this module.
     from multiprocessing import Pool
 
 
@@ -170,9 +172,8 @@ class BipartiteGraph:
             else:
                 self.biadjacency = biadjacency
             if self.biadjacency.shape[0] == self.biadjacency.shape[1]:
-                print(
-                    'Your matrix is square. Please remember that it \
-                    is treated as a biadjacency matrix, not an adjacency matrix.')
+                _bu.warn('Your matrix is square. Please remember that it '
+                         'is treated as a biadjacency matrix, not an adjacency matrix.')
             if self.sparse:
                 self.continuous_weights = not np.all(np.equal(np.mod(self.biadjacency.data, 1), 0))
             else:
@@ -402,12 +403,10 @@ class BipartiteGraph:
             if np.any(np.isin(self.rows_deg, (0, self.n_cols))) or np.any(np.isin(self.cols_deg, (0, self.n_rows))):
                 flag_degrees = True
         if flag_degrees:
-            print('''
-                      WARNING: this system has at least a node that is disconnected or connected to all nodes
-                       of the opposite layer. This may cause some convergence issues.
-                      Please use the full mode providing a biadjacency matrix or an edgelist,
-                       or clean your data from these nodes. 
-                      ''')
+            _bu.warn('This system has at least a node that is disconnected or connected to all nodes '
+                     'of the opposite layer. This may cause some convergence issues. '
+                     'Please use the full mode providing a biadjacency matrix or an edgelist, '
+                     'or clean your data from these nodes.', stacklevel=5)
             zero_rows = np.where(self.rows_deg == 0)[0]
             zero_cols = np.where(self.cols_deg == 0)[0]
             if not self.exp:
@@ -633,11 +632,11 @@ class BipartiteGraph:
         error = 0
         weighted = np.max(biad_mat) > 1
         if np.any(avg_bicm < 0):
-            print('Negative probabilities in the average matrix!')
+            _bu.warn('Negative probabilities in the average matrix!')
             error = 1
         if not weighted:
             if np.any(avg_bicm > 1):
-                print('Probabilities greater than 1 in the average matrix!')
+                _bu.warn('Probabilities greater than 1 in the average matrix!')
                 error = 1
         if mrse is None:
             if weighted:
@@ -667,7 +666,7 @@ class BipartiteGraph:
         max_err = np.max([err_rows, err_cols])
         if max_err > 1e-3:
             # error = 1
-            print('WARNING max error > 0.001')
+            _bu.warn('Max error > 0.001')
             # if tot_err > 10:
             #     print('total error > 10')
         # if err_rows + err_cols > 1:
@@ -709,11 +708,11 @@ class BipartiteGraph:
                 exp_cols_sum[j] += self.rows_multiplicity[i] * multiplier
                 if error == 0:
                     if multiplier < 0:
-                        print('Warning: negative link probabilities')
+                        _bu.warn('Negative link probabilities')
                         error = 1
                     if not self.weighted:
                         if multiplier > 1:
-                            print('Warning: link probabilities > 1')
+                            _bu.warn('Link probabilities > 1')
                             error = 1
         if self.weighted:
             # use mrse
@@ -732,7 +731,7 @@ class BipartiteGraph:
         max_err = np.max([err_rows, err_cols])
         if max_err > 1e-3:
             # error = 1
-            print('WARNING max error > 0.001')
+            _bu.warn('Max error > 0.001')
             # if tot_err > 10:
             #     print('total error > 10')
         # if err_rows + err_cols > 1:
@@ -987,7 +986,7 @@ class BipartiteGraph:
             else:
                 method = 'newton'
         if not self.is_initialized:
-            print('Graph is not initialized. I can\'t compute the BiCM.')
+            _bu.warn('Graph is not initialized. I can\'t compute the BiCM.')
             return
         if regularise is None:
             if self.weighted or exp:
@@ -995,7 +994,7 @@ class BipartiteGraph:
             else:
                 regularise = True
         if regularise and exp:
-            print('Warning: regularise is only recommended in non-exp mode.')
+            _bu.warn('regularise is only recommended in non-exp mode.')
         if method == 'root':
             exp = True
         self._set_parameters(method=method, initial_guess=initial_guess, tol=tol, eps=eps, regularise=regularise,
@@ -1005,11 +1004,9 @@ class BipartiteGraph:
             self._solve_bicm_full()
         else:
             if light_mode is False:
-                print('''
-                I cannot work with the full mode without the biadjacency matrix.
-                This will not account for disconnected or fully connected nodes.
-                Solving in light mode...
-                ''')
+                _bu.warn('I cannot work with the full mode without the biadjacency matrix. '
+                         'This will not account for disconnected or fully connected nodes. '
+                         'Solving in light mode...')
             self._solve_bicm_light()
         if print_error:
             max_err = self._check_solution(return_error=True)
@@ -1021,9 +1018,9 @@ class BipartiteGraph:
                 print('Solver converged.')
             else:
                 if max_err >= 1:
-                    print('Solver did not converge: error', max_err)
+                    _bu.warn('Solver did not converge: error {}'.format(max_err))
                 else:
-                    print('Solver converged, the maximum relative error is {:.2f}%'.format(max_err * 100))
+                    _bu.warn('Solver converged, the maximum relative error is {:.2f}%'.format(max_err * 100))
             self.error = max_err
         self.is_randomized = True
 
@@ -1047,7 +1044,7 @@ class BipartiteGraph:
         """
         if tolerance is not None:
             tol = tolerance
-        print('solve_bicm has been deprecated, calling solve_tool instead')
+        _bu.warn('solve_bicm has been deprecated, calling solve_tool instead', category=FutureWarning)
         self.solve_tool(
             method=method,
             initial_guess=initial_guess,
@@ -1088,7 +1085,7 @@ class BipartiteGraph:
         if not self.is_initialized:
             raise ValueError('Graph is not initialized. I can\'t compute the BiCM')
         elif not self.is_randomized:
-            print('Computing the BiCM...')
+            _bu.logger.info('Computing the BiCM...')
             self.solve_tool()
         return self.dict_x, self.dict_y
 
@@ -1177,7 +1174,7 @@ class BipartiteGraph:
             v_list_keys = list(self.v_adj_list.keys())
             pval_adj_list = dict()
             if self.threads_num > 1:
-                with Pool(processes=self.threads_num) as pool:
+                with _bu.get_pool(self.threads_num) as pool:
                     partial_function = partial(self.pval_calculator, x=x, y=y)
                     if self.progress_bar:
                         pvals_dicts = pool.map(partial_function, tqdm(v_list_keys))
@@ -1210,7 +1207,7 @@ class BipartiteGraph:
             if self.progress_bar:
                 print('Calculating p-values...')
             if self.threads_num > 1:
-                with Pool(processes=self.threads_num) as pool:
+                with _bu.get_pool(self.threads_num) as pool:
                     partial_function = partial(self.pval_calculator_poibin, deg_dict=deg_dict, x=x, y=y)
                     if self.progress_bar:
                         pvals_dicts = pool.map(partial_function, tqdm(deg_couples))
@@ -1223,7 +1220,7 @@ class BipartiteGraph:
                         pvals_dicts.append(
                             self.pval_calculator_poibin(deg_couple, deg_dict=deg_dict, x=x, y=y))
                 else:
-                    for deg_couple in v_list_coupled:
+                    for deg_couple in deg_couples:
                         pvals_dicts.append(
                             self.pval_calculator_poibin(deg_couple, deg_dict=deg_dict, x=x, y=y))
             pval_adj_list = {k: dict() for k in self.v_adj_list}
@@ -1251,7 +1248,7 @@ class BipartiteGraph:
         """
         if approx_method is None:
             if method is not None:
-                print('"method" is deprecated, use approx_method instead')
+                _bu.warn('"method" is deprecated, use approx_method instead', category=FutureWarning)
                 approx_method = method
             else:
                 approx_method = 'poisson'
@@ -1259,16 +1256,14 @@ class BipartiteGraph:
         self.projection_method = approx_method
         self.progress_bar = progress_bar
         if self.weighted:
-            print('Weighted projection not yet implemented.')
+            _bu.warn('Weighted projection not yet implemented.')
             return
         if self.adj_list is None and self.biadjacency is None:
-            print('''
-            Without the edges I can't compute the projection. 
-            Use set_biadjacency_matrix, set_adjacency_list or set_edgelist to add edges.
-            ''')
+            _bu.warn("Without the edges I can't compute the projection. "
+                     "Use set_biadjacency_matrix, set_adjacency_list or set_edgelist to add edges.")
             return
         if alpha >= 1:
-            print('Warning: alpha larger than 1 will yield a full projection.')
+            _bu.warn('alpha larger than 1 will yield a full projection.')
         if threads_num is None:
             if system() == 'Windows':
                 threads_num = 1
@@ -1277,10 +1272,10 @@ class BipartiteGraph:
         else:
             if system() == 'Windows' and threads_num != 1:
                 threads_num = 1
-                print('Parallel processes not yet implemented on Windows, computing anyway...')
+                _bu.warn('Parallel processes not yet implemented on Windows, computing anyway...')
         self.threads_num = threads_num
         if not self.is_randomized:
-            print('First I have to compute the BiCM. Computing...')
+            _bu.logger.info('First I have to compute the BiCM. Computing...')
             self.solve_tool()
         if rows:
             self.rows_pvals = self._projection_calculator()
@@ -1299,13 +1294,13 @@ class BipartiteGraph:
         """
         if self.biadjacency is None:
             assert self.edgelist is not None or self.adj_list is not None, 'Graph links must be given in some format!'
-            print('Computing biadjacency matrix...')
+            _bu.logger.info('Computing biadjacency matrix...')
             if self.edgelist is not None:
                 self.biadjacency = bnef.biadjacency_from_edgelist(self.edgelist)[0]
             elif self.adj_list is not None:
                 self.biadjacency = bnef.biadjacency_from_adjacency_list(self.adj_list)
         if not self.is_randomized:
-            print('First I have to compute the BiCM. Computing...')
+            _bu.logger.info('First I have to compute the BiCM. Computing...')
             self.solve_tool()
         if not self.weighted:
             self.pvals_mat = self.avg_mat ** self.biadjacency
@@ -1331,8 +1326,8 @@ class BipartiteGraph:
         if self.pvals_mat is None:
             self.compute_weighted_pvals_mat()
         if validation_method is None:
-            print('FDR validated matrix will be returned by default. '
-                  'Set validation_method to "global" or "bonferroni" for alternatives or use .get_weighted_pvals_mat.')
+            _bu.logger.info('FDR validated matrix will be returned by default. '
+                            'Set validation_method to "global" or "bonferroni" for alternatives or use .get_weighted_pvals_mat.')
             validation_method = 'fdr'
         assert validation_method in ['bonferroni', 'fdr', 'global'], 'validation_method must be a valid string'
         pvals_array = self.pvals_mat.flatten()
@@ -1350,12 +1345,12 @@ class BipartiteGraph:
         if validation_method == 'bonferroni':
             eff_fdr_th = multiplier
             if sorted_pvals[0] > eff_fdr_th:
-                print('No V-motifs will be validated. Try increasing alpha')
+                _bu.warn('No V-motifs will be validated. Try increasing alpha', stacklevel=5)
         elif validation_method == 'fdr':
             try:
                 eff_fdr_pos = np.where(sorted_pvals <= (np.arange(1, len(sorted_pvals) + 1) * multiplier))[0][-1]
             except IndexError:
-                print('No V-motifs will be validated. Try increasing alpha')
+                _bu.warn('No V-motifs will be validated. Try increasing alpha', stacklevel=5)
                 eff_fdr_pos = 0
             eff_fdr_th = (eff_fdr_pos + 1) * multiplier  # +1 because of Python numbering: our pvals are ordered 1,...,n
         return eff_fdr_th
@@ -1496,10 +1491,10 @@ class BipartiteGraph:
         """
         if layer is None:
             if not self.is_rows_projected and not self.is_cols_projected:
-                print('First compute a projection.')
+                _bu.warn('First compute a projection.')
                 return None
             elif self.is_rows_projected and self.is_cols_projected:
-                print("Please specify the layer with layer='rows' or layer='columns'.")
+                _bu.warn("Please specify the layer with layer='rows' or layer='columns'.")
                 return None
             elif self.is_rows_projected:
                 layer = 'rows'
@@ -1525,7 +1520,7 @@ class BipartiteGraph:
         :type biadjacency: numpy.array, scipy.sparse, list
         """
         if self.is_initialized:
-            print('Graph already contains edges or has a degree sequence. Use clean_edges() first.')
+            _bu.warn('Graph already contains edges or has a degree sequence. Use clean_edges() first.')
         else:
             self._initialize_graph(biadjacency=biadjacency)
 
@@ -1538,7 +1533,7 @@ class BipartiteGraph:
         :type adj_list: dict
         """
         if self.is_initialized:
-            print('Graph already contains edges or has a degree sequence. Use clean_edges() first.')
+            _bu.warn('Graph already contains edges or has a degree sequence. Use clean_edges() first.')
         else:
             self._initialize_graph(adjacency_list=adj_list)
 
@@ -1551,7 +1546,7 @@ class BipartiteGraph:
         :type edgelist: list, numpy.array
         """
         if self.is_initialized:
-            print('Graph already contains edges or has a degree sequence. Use clean_edges() first.')
+            _bu.warn('Graph already contains edges or has a degree sequence. Use clean_edges() first.')
         else:
             self._initialize_graph(edgelist=edgelist)
 
@@ -1563,7 +1558,7 @@ class BipartiteGraph:
         :type degree_sequences: list, numpy.array, tuple
         """
         if self.is_initialized:
-            print('Graph already contains edges or has a degree sequence. Use clean_edges() first.')
+            _bu.warn('Graph already contains edges or has a degree sequence. Use clean_edges() first.')
         else:
             self._initialize_graph(degree_sequences=degree_sequences)
 

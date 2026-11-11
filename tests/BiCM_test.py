@@ -125,7 +125,7 @@ print('By default, the poisson approximation is used, since the poisson binomial
 # Here, an example of the poibin implementation. This can take even some minutes, and it's faster when using a biadjacency matrix instead of other data types. Note that the poisson approximation is fairly good.
 print('Here, an example of the poibin implementation. This can take even some minutes, and it\'s faster when using a biadjacency matrix instead of other data types. Note that the poisson approximation is fairly good.')
 
-myGraph.compute_projection(rows=True, method='poibin')
+myGraph.compute_projection(rows=True, approx_method='poibin')
 rows_projection = myGraph.get_rows_projection()
 print(rows_projection)
 

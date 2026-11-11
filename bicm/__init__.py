@@ -15,6 +15,7 @@ Author: Matteo Bruno
 
 from .network_functions import *
 from .graph_classes import *
+from ._utils import BiCMWarning
 
 __version__ = "3.5.0"
 __author__ = """Matteo Bruno (matteobruno180@gmail.com)"""

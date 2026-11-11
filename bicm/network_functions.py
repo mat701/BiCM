@@ -64,21 +64,38 @@ def biwcm_c_from_fitnesses(x, y):
     return avg_mat
 
 
-def sample_bicm(avg_mat):
+def _random_source(seed):
+    """
+    Return the random source for the sampling functions: numpy's global random state
+    if seed is None (the behaviour of older versions), otherwise a numpy Generator.
+    """
+    if seed is None:
+        return np.random
+    return np.random.default_rng(seed)
+
+
+def sample_bicm(avg_mat, seed=None):
     """
     Build a biadjacency matrix sampling from the probability matrix of a BiCM.
+
+    :param seed: seed or numpy random Generator used for the sampling. If None (default),
+        numpy's global random state is used, so ``np.random.seed`` keeps working.
     """
     if not isinstance(avg_mat, np.ndarray):
         avg_mat = np.array(avg_mat)
     dim1, dim2 = avg_mat.shape
-    return np.array(avg_mat > np.reshape(np.random.sample(dim1 * dim2), (dim1, dim2)), dtype=int)
+    rng = _random_source(seed)
+    return np.array(avg_mat > np.reshape(rng.random(dim1 * dim2), (dim1, dim2)), dtype=int)
 
 
-def sample_biwcm_d(x, y=None, exp=False):
+def sample_biwcm_d(x, y=None, exp=False, seed=None):
     """
     Samples the biwcm_d model. Returns a sampled biadjacency matrix.
     Works by passing only a avg matrix or directly the fitnesses of both layers.
     If exp=True, it supposes that the fitness exponents theta and eta have been passed.
+
+    :param seed: seed or numpy random Generator used for the sampling. If None (default),
+        numpy's global random state is used, so ``np.random.seed`` keeps working.
     """
     if not isinstance(x, np.ndarray):
         x = np.array(x)
@@ -102,15 +119,18 @@ def sample_biwcm_d(x, y=None, exp=False):
         x = x[good_rows, :]
     else:
         good_rows = np.arange(len(rows_sum))
-    out_x[good_rows[:, None], good_cols] = np.random.geometric(1 / (x + 1)) - 1 # Minus one for correct geometric with n exponent
+    out_x[good_rows[:, None], good_cols] = _random_source(seed).geometric(1 / (x + 1)) - 1 # Minus one for correct geometric with n exponent
     return out_x
 
 
-def sample_biwcm_c(x, y=None, exp=False):
+def sample_biwcm_c(x, y=None, exp=False, seed=None):
     """
     Samples the biwcm_c model. Returns a sampled biadjacency matrix.
     Works by passing only a avg matrix or directly the fitnesses of both layers.
     If exp=True, it supposes that the fitness exponents theta and eta have been passed.
+
+    :param seed: seed or numpy random Generator used for the sampling. If None (default),
+        numpy's global random state is used, so ``np.random.seed`` keeps working.
     """
     if not isinstance(x, np.ndarray):
         x = np.array(x)
@@ -134,32 +154,40 @@ def sample_biwcm_c(x, y=None, exp=False):
         x = x[good_rows, :]
     else:
         good_rows = np.arange(len(rows_sum))
-    out_x[good_rows[:, None], good_cols] = np.random.exponential(scale=x)
+    out_x[good_rows[:, None], good_cols] = _random_source(seed).exponential(scale=x)
     return out_x
 
 
-def sample_bicm_edgelist(x, y):
+def sample_bicm_edgelist(x, y, seed=None):
     """
     Build an edgelist sampling from the fitnesses of a BiCM.
+
+    :param seed: seed or numpy random Generator used for the sampling. If None (default),
+        numpy's global random state is used, so ``np.random.seed`` keeps working.
     """
+    rng = _random_source(seed)
     edgelist = []
     for i in range(len(x)):
         for j in range(len(y)):
             xy = x[i] * y[j]
-            if np.random.uniform() < xy / (1 + xy):
+            if rng.uniform() < xy / (1 + xy):
                 edgelist.append((i, j))
     return edgelist
 
 
-def sample_bicm_edgelist_names(dict_x, dict_y):
+def sample_bicm_edgelist_names(dict_x, dict_y, seed=None):
     """
     Build an edgelist from the BiCM keeping the names of the nodes as contained in the BiCM fitnesses' dictionaries.
+
+    :param seed: seed or numpy random Generator used for the sampling. If None (default),
+        numpy's global random state is used, so ``np.random.seed`` keeps working.
     """
+    rng = _random_source(seed)
     edgelist = []
     for xx in dict_x:
         for yy in dict_y:
             xy = dict_x[xx] * dict_y[yy]
-            if np.random.uniform() < xy / (1 + xy):
+            if rng.uniform() < xy / (1 + xy):
                 edgelist.append((xx, yy))
     return edgelist
 

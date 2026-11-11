@@ -9,7 +9,7 @@ description = "Package for bipartite configuration model"
 readme = "README.md"
 license = { file = "LICENSE.txt" }
 authors = [{ name = "Matteo Bruno", email = "matteobruno180@gmail.com" }]
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 dependencies = [
     "numpy>=1.22",
     "scipy>=1.8",
@@ -18,7 +18,6 @@ dependencies = [
 ]
 classifiers = [
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",

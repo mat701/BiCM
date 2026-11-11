@@ -1,6 +1,6 @@
 ## BiCM package
 
-This is a Python package for the computation of the maximum entropy bipartite configuration model (BiCM) and the projection of bipartite networks on one layer. It requires Python 3.9 or later.
+This is a Python package for the computation of the maximum entropy bipartite configuration model (BiCM) and the projection of bipartite networks on one layer. It requires Python 3.10 or later.
 
 You can install this package via pip: 
 

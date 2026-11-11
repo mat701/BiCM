@@ -45,3 +45,8 @@ Models functions
     :undoc-members:
     :show-inheritance:
     :private-members:
+
+Warnings
+----------------------------------
+
+.. autoclass:: bicm.BiCMWarning

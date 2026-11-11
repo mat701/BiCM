@@ -622,7 +622,7 @@ class BipartiteGraph:
         This function prints the rows sums differences between two matrices,
         that originally are the biadjacency matrix and its bicm average matrix.
         The intended use of this is to check if an average matrix is actually a solution
-         for a bipartite configuration model.
+        for a bipartite configuration model.
 
         If return_error is set to True, it returns 1 if the sum of the differences is bigger than 1.
 
@@ -1101,7 +1101,7 @@ class BipartiteGraph:
         :param numpy.ndarray x: the fitnesses of the layer of the desired projection.
         :param numpy.ndarray y: the fitnesses of the opposite layer.
         :returns: a dictionary containing as keys the nodes that form v-motifs with the
-        considered node, and as values the corresponding p-values.
+            considered node, and as values the corresponding p-values.
         """
         node_xy = x[v_list_key] * y
         temp_pvals_dict = {}

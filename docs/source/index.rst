@@ -59,7 +59,7 @@ To customize the solver you can alternatively use (in advance) the following met
 
 .. code-block:: python
     
-    myGraph.solve_tool(light_mode=False, method='newton', initial_guess=None, tolerance=1e-8, max_steps=None, verbose=False, linsearch=True, regularise=False, print_error=True, exp=False)
+    myGraph.solve_tool(light_mode=False, method='newton', initial_guess=None, tol=1e-8, max_steps=None, verbose=False, linsearch=True, regularise=False, print_error=True, exp=False)
 
 You can compute the p-value of each (weighted) link in the network. To return the matrix of pvalues or the binarisation after applying a threshold:
 
@@ -79,12 +79,12 @@ Alternatively, to customize the projection:
 
 .. code-block:: python
     
-    myGraph.compute_projection(rows=True, alpha=0.05, method='poisson', threads_num=4, progress_bar=True)
+    myGraph.compute_projection(rows=True, alpha=0.05, approx_method='poisson', threads_num=4, progress_bar=True)
 
 Dependencies
 ============
 
-This package has been developed for Python 3.5 but it should be compatible with other versions. It works on numpy arrays and it uses numba and multiprocessing to speed up the computation. Feel free to send an inquiry (and please do it!) if you find any incompatibility.
+This package requires Python 3.10 or later. It works on numpy arrays and it uses numba and multiprocessing to speed up the computation. Feel free to send an inquiry (and please do it!) if you find any incompatibility.
 
 Guide
 ^^^^^^

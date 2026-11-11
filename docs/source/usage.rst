@@ -27,7 +27,7 @@ You can clear your graph by using
 
 .. code-block:: python
     
-    myGraph.clear_edges()
+    myGraph.clean_edges()
 
 Note that if your network is not huge, the best way to use the BiCM package is to work with the biadjacency matrix since it will automatically take care of possible isolated nodes or fully connected nodes.
 
@@ -38,7 +38,7 @@ After you have created the BipartiteGraph object, you can compute the bicm of yo
 
 .. code-block:: python
     
-    myGraph.solve_tool(light_mode=False, method='newton', initial_guess=None, tolerance=1e-8, max_steps=None, verbose=False, linsearch=True, regularise=False, print_error=True)
+    myGraph.solve_tool(light_mode=False, method='newton', initial_guess=None, tol=1e-8, max_steps=None, verbose=False, linsearch=True, regularise=False, print_error=True)
     myGraph.get_bicm_fitnesses()
     myGraph.get_bicm_matrix()
 
@@ -69,10 +69,33 @@ To compute the projected network and get the edgelist or the adjacency list, use
 
 .. code-block:: python
     
-    myGraph.compute_projection(rows=True, alpha=0.05, method='poisson', threads_num=4, progress_bar=True)
+    myGraph.compute_projection(rows=True, alpha=0.05, approx_method='poisson', threads_num=4, progress_bar=True)
     myGraph.get_rows_projection(fmt='edgelist')
     myGraph.get_cols_projection(fmt='adjacency_list')
 
 You can also request the formats 'array' or 'sparse' that yield an adjacency matrix as a numpy array or scipy sparse matrix.
 
-The first method is the customizable one, while the other two methods calculate the projection with default options if it has not been computed yet. The "method" option sets the approximation of the Poisson Binomial variable that is the number of common neighbors between nodes. Allowed options are 'poisson' (default and reliable), 'poibin' (exact but very slow, to be avoided except for small networks), 'normal' and 'rna' (to be used only in specific cases, otherwise avoid).
+The first method is the customizable one, while the other two methods calculate the projection with default options if it has not been computed yet. The "approx_method" option sets the approximation of the Poisson Binomial variable that is the number of common neighbors between nodes. Allowed options are 'poisson' (default and reliable), 'poibin' (exact but very slow, to be avoided except for small networks), 'normal' and 'rna' (to be used only in specific cases, otherwise avoid).
+
+Warnings, logging and reproducibility
+--------------------------------------------
+
+Problems found while solving or projecting (for example a solver that did not converge) are reported as Python warnings of category ``bicm.BiCMWarning``, so they can be filtered:
+
+.. code-block:: python
+
+    import warnings
+    import bicm
+    warnings.filterwarnings("ignore", category=bicm.BiCMWarning)
+
+Informative messages (for example "Computing the BiCM...") go to the ``bicm`` logger and are hidden by default. To show them:
+
+.. code-block:: python
+
+    import logging
+    logging.basicConfig()
+    logging.getLogger("bicm").setLevel(logging.INFO)
+
+The sampling functions accept a ``seed`` argument (an integer or a ``numpy.random.Generator``) to get reproducible samples, e.g. ``sample_bicm(avg_mat, seed=42)``. Without it, numpy's global random state is used as in previous versions.
+
+Projections use several processes by default. On macOS, scripts must put their code under ``if __name__ == "__main__":`` for this to work, or pass ``threads_num=1``. On Windows projections always run in a single process.

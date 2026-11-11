@@ -309,6 +309,7 @@ def linsearch_fun_BiCM(xx, args):
     The function returns the step's size, alpha.
     Alpha determines how much to move on the descending direction
     found by the algorithm.
+
     :param xx: Tuple of arguments to find alpha:
         solution, solution step, tuning parameter beta,
         initial alpha, function f
@@ -387,6 +388,7 @@ def linsearch_fun_BiCM_exp(xx, args):
     The function returns the step's size, alpha.
     Alpha determines how much to move on the descending direction
     found by the algorithm.
+
     :param xx: Tuple of arguments to find alpha:
         solution, solution step, tuning parameter beta,
         initial alpha, function f
@@ -425,6 +427,7 @@ def linsearch_fun_BiCM_exp_fixed(xx):
     Alpha determines how much to move on the descending direction
     found by the algorithm.
     This function works on BiCM exponential version.
+
     :param xx: Tuple of arguments to find alpha:
         solution, solution step, tuning parameter beta,
         initial alpha, step.

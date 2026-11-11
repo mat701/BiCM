@@ -48,7 +48,7 @@ To compute the BiCM probability matrix of the graph or the relative fitnesses co
 This will solve the bicm using recommended settings for the solver. 
 To customize the solver you can alternatively use (in advance) the following method:
     
-    myGraph.solve_tool(light_mode=False, method='newton', initial_guess=None, tolerance=1e-8, max_steps=None, verbose=False, linsearch=True, regularise=False, print_error=True, exp=False)
+    myGraph.solve_tool(light_mode=False, method='newton', initial_guess=None, tol=1e-8, max_steps=None, verbose=False, linsearch=True, regularise=False, print_error=True, exp=False)
 
 To get the rows or columns projection of the graph:
 
@@ -57,7 +57,7 @@ To get the rows or columns projection of the graph:
 
 Alternatively, to customize the projection:
 
-    myGraph.compute_projection(rows=True, alpha=0.05, method='poisson', threads_num=4, progress_bar=True)
+    myGraph.compute_projection(rows=True, alpha=0.05, approx_method='poisson', threads_num=4, progress_bar=True)
     
 ### Warnings, logging and reproducibility
 

@@ -19,4 +19,4 @@ Try working with the functions that only use the degree sequence of your biparti
 The computation of the projection takes too long. What can I do?
 ---------------------------------------------------------------------------------------
 
-If you're using the Poisson-Binomial method (method='poibin') try a different Poisson-binomial approximation, like the Poisson one (method='poisson'). However, this computation can be slow for big networks.
+If you're using the Poisson-Binomial method (approx_method='poibin') try a different Poisson-binomial approximation, like the Poisson one (approx_method='poisson'). However, this computation can be slow for big networks.

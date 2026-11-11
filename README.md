@@ -79,13 +79,13 @@ If you use the `bicm` module, please cite its location on Github
 [https://github.com/mat701/BiCM](https://github.com/mat701/BiCM) and the
 original articles [Vallarano2021], [Saracco2015] and [Saracco2017].
 
-If you use the weighted models BiWCM_c or BiMCM you might consider citing also the paper introducing the solvers of this package [Bruno2023].
+If you use the weighted models (BiWCM_c or BiWCM_d), please also cite [Bruno2023], the paper introducing them: [M. Bruno et al., J. Phys. Complex. 4, 045011 (2023)](https://doi.org/10.1088/2632-072X/ad1411).
 
 ### References
 
 [Vallarano2021] [N. Vallarano, M. Bruno, E. Marchese, G. Trapani, F. Saracco, T. Squartini, G. Cimini, M. Zanon, Fast and scalable likelihood maximization for Exponential Random Graph Models with local constraints, Nature Scientific Reports](https://doi.org/10.1038/s41598-021-93830-4)
 
-[Bruno2023] [M. Bruno, D. Mazzilli, A. Patelli, T. Squartini, F. Saracco, Inferring comparative advantage via entropy maximization. Journal of Physics: Complexity, Volume 4, Number 4 (2023)](https://doi.org/10.1088/2632-072X/ad1411)
+[Bruno2023] [M. Bruno, D. Mazzilli, A. Patelli, T. Squartini, F. Saracco, Inferring comparative advantage via entropy maximization. J. Phys. Complex. 4, 045011 (2023), doi:10.1088/2632-072X/ad1411](https://doi.org/10.1088/2632-072X/ad1411)
 
 [Saracco2015] [F. Saracco, R. Di Clemente, A. Gabrielli, T. Squartini, Randomizing bipartite networks: the case of the World Trade Web, Scientific Reports 5, 10595 (2015)](http://www.nature.com/articles/srep10595).
 

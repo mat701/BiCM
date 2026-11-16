@@ -424,8 +424,9 @@ def test_projection_getters_update_the_validation(block_graph):
     assert len(loose) > len(strict)
     assert block_graph.rows_pvals is pvals  # the p-values are not computed again
     assert len(block_graph.get_rows_projection(fmt="edgelist")) == len(loose)  # last validation kept
-    exact = block_graph.get_rows_projection(method="poibin", fmt="edgelist")
-    assert block_graph.projection_method == "poibin"
+    assert block_graph.projection_method == "poibin"  # the exact method is the default
+    exact = block_graph.get_rows_projection(method="poisson", fmt="edgelist")
+    assert block_graph.projection_method == "poisson"
     assert block_graph.rows_pvals is not pvals
     assert len(exact) > 0
 

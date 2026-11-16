@@ -11,6 +11,10 @@ New features:
 * :mod:`bicm.pvalues` and :mod:`bicm.validation`: the algorithms for the p-values of the co-occurrences and for the multiple hypothesis testing, shared by all the projections.
 * The projections of ``BipartiteGraph`` can be returned as adjacency matrices (``fmt='array'`` or ``fmt='sparse'``), ``get_cols_projection`` accepts ``validation_method``, and the getters update the validation without computing the p-values again.
 
+Changed defaults:
+
+* The default method of the projections of ``BipartiteGraph`` is now the exact one (``approx_method='poibin'``) instead of the Poisson approximation, which is conservative: expect more validated links. Pass ``approx_method='poisson'`` to get the previous behaviour.
+
 Speed:
 
 * The projections of ``BipartiteGraph`` are computed on the distinct degrees of the opposite layer with compiled and multithreaded code, instead of a loop on the couples of nodes in several processes. On the networks used for the tests they are from 50 to several hundred times faster, and the exact method (``poibin``) is now usable on large networks.

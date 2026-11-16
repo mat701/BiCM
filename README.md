@@ -74,10 +74,10 @@ To get the rows or columns projection of the graph:
 
 Alternatively, to customize the projection:
 
-    myGraph.compute_projection(rows=True, alpha=0.05, approx_method='poisson', validation_method='fdr', threads_num=4)
+    myGraph.compute_projection(rows=True, alpha=0.05, approx_method='poibin', validation_method='fdr', threads_num=4)
     myGraph.get_rows_projection(fmt='edgelist')
 
-- `approx_method` is the distribution used for the number of common neighbors of two nodes: `'poisson'` (default), `'poibin'` (the exact Poisson Binomial distribution), `'normal'` or `'rna'`.
+- `approx_method` is the distribution used for the number of common neighbors of two nodes: `'poibin'` (default, the exact Poisson Binomial distribution), or its approximations `'poisson'`, `'normal'` and `'rna'`.
 - `validation_method` is the multiple hypothesis testing procedure: `'fdr'` (default), `'bonferroni'` or `'global'`.
 - `fmt` is the format of the result: `'adjacency_list'`, `'edgelist'`, `'array'` or `'sparse'`.
 

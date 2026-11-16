@@ -69,7 +69,7 @@ To compute the projected network and get the edgelist or the adjacency list, use
 
 .. code-block:: python
 
-    myGraph.compute_projection(rows=True, alpha=0.05, approx_method='poisson', validation_method='fdr', threads_num=4)
+    myGraph.compute_projection(rows=True, alpha=0.05, approx_method='poibin', validation_method='fdr', threads_num=4)
     myGraph.get_rows_projection(fmt='edgelist')
     myGraph.get_cols_projection(fmt='adjacency_list')
 
@@ -83,8 +83,8 @@ The first method is the customizable one, while the other two methods calculate 
 
 The p-value of two nodes is the probability that the BiCM gives them at least as many common neighbors as observed. The number of common neighbors is a Poisson Binomial variable and the "approx_method" option sets how its distribution is computed:
 
-* 'poisson' (default): Poisson approximation, fast and reliable when the link probabilities are small;
-* 'poibin' (or 'exact'): the exact Poisson Binomial distribution;
+* 'poibin' (or 'exact', default): the exact Poisson Binomial distribution;
+* 'poisson': Poisson approximation, conservative, accurate when the link probabilities are small. It was the default up to version 3.5;
 * 'normal': Gaussian approximation with continuity correction;
 * 'rna': refined normal approximation, a Gaussian corrected with the skewness of the distribution.
 

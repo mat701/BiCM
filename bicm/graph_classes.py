@@ -85,7 +85,7 @@ class BipartiteGraph:
         self.r_theta_xy = None
         self.projected_rows_adj_list = None
         self.projected_cols_adj_list = None
-        self.projection_method = 'poisson'
+        self.projection_method = 'poibin'
         self.threads_num = 1
         self._projection_data = {}
         self._projection_cache = {}
@@ -1171,10 +1171,9 @@ class BipartiteGraph:
 
         :param bool rows: True if requesting the rows' projection.
         :param float alpha: Threshold for the p-values validation.
-        :param str approx_method: Method for the pvalues computation: *poisson* (default),
-            *normal* and *rna* (refined normal approximation) are approximations of the
-            distribution of the number of common neighbours, *poibin* (or *exact*)
-            is its exact Poisson-binomial distribution.
+        :param str approx_method: Method for the pvalues computation: *poibin* (or *exact*, default)
+            is the exact Poisson-binomial distribution of the number of common neighbours,
+            *poisson*, *normal* and *rna* (refined normal approximation) are its approximations.
         :param str method: Deprecated, same as approx_method.
         :param int threads_num: Number of threads to use for the computation.
             By default all the threads available to numba are used.
@@ -1188,7 +1187,7 @@ class BipartiteGraph:
                 _bu.warn('"method" is deprecated, use approx_method instead', category=FutureWarning)
                 approx_method = method
             else:
-                approx_method = 'poisson'
+                approx_method = 'poibin'
         if approx_method not in bpv.PVALUE_METHODS + ('exact',):
             raise ValueError('approx_method must be "poisson", "poibin", "normal" or "rna".')
         bval.pvalue_threshold([], method=validation_method)  # check the name of the method
@@ -1360,7 +1359,7 @@ class BipartiteGraph:
         data = self._projection_data.get(layer)
         if data is None or (method is not None and method != data['approx_method']):
             self.compute_projection(rows=rows, alpha=0.05 if alpha is None else alpha,
-                                    approx_method='poisson' if method is None else method,
+                                    approx_method='poibin' if method is None else method,
                                     threads_num=threads_num, progress_bar=progress_bar,
                                     validation_method='fdr' if validation_method is None else validation_method)
             data = self._projection_data.get(layer)
@@ -1399,14 +1398,14 @@ class BipartiteGraph:
         """Get the projected network on the rows layer of the graph.
 
         If the projection has not been computed yet it is computed with the given
-        parameters, or with the default ones (alpha 0.05, *poisson* method, *fdr* validation).
+        parameters, or with the default ones (alpha 0.05, exact *poibin* method, *fdr* validation).
         If it has been computed, the parameters that are not passed keep the
         values of the last computation, the others update the projection.
 
         :param alpha: threshold for the validation of the projected edges.
         :type alpha: float, optional
         :param method: method for the calculation of the p-values.
-            Implemented choices are: poisson, poibin, normal, rna
+            Implemented choices are: poibin (exact, default), poisson, normal, rna
         :type method: str, optional
         :param threads_num: number of threads to use for the computation.
         :type threads_num: int, optional

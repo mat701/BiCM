@@ -87,7 +87,7 @@ Alternatively, to customize the projection:
 
 .. code-block:: python
 
-    myGraph.compute_projection(rows=True, alpha=0.05, approx_method='poisson', validation_method='fdr', threads_num=4)
+    myGraph.compute_projection(rows=True, alpha=0.05, approx_method='poibin', validation_method='fdr', threads_num=4)
 
 Dependencies
 ============

@@ -22,7 +22,7 @@ copyright = '2020, Matteo Bruno'
 author = 'Matteo Bruno'
 
 # The full version, including alpha/beta/rc tags
-release = '3.5.0'
+release = '4.0.0'
 
 
 # -- General configuration ---------------------------------------------------
@@ -34,6 +34,7 @@ extensions = [
     'sphinx.ext.autodoc',
     'sphinx.ext.doctest',
     'sphinx.ext.mathjax',
+    'sphinx.ext.napoleon',
     'sphinx.ext.viewcode',
 ]
 
@@ -64,5 +65,5 @@ master_doc = 'index'
 # Show also documentation for _init_
 autoclass_content = 'both'
 
-autodoc_mock_imports = ['numpy', 'scipy', 'numba', 'multiprocessing', 'tqdm']
+autodoc_mock_imports = ['numpy', 'scipy', 'numba', 'torch']
 

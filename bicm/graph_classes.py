@@ -4,24 +4,18 @@ This module contains the class BipartiteGraph that handles the graph object, and
 The solver functions are located here for compatibility with the numba package.
 """
 
+import numba
 import numpy as np
-import scipy.sparse
 import scipy
-from scipy.stats import norm, poisson
-import bicm.models_functions as bmof
-import bicm.solver_functions as bsof
-import bicm.network_functions as bnef
-from tqdm import tqdm
-import bicm.poibin as pb
+import scipy.optimize
+import scipy.sparse
+
 import bicm._utils as _bu
-from functools import partial
-from platform import system
-
-if system() != 'Windows':
-    # Not used here any more (see _utils.get_pool), kept for code importing it from this module.
-    from multiprocessing import Pool
-
-
+import bicm.models_functions as bmof
+import bicm.network_functions as bnef
+import bicm.pvalues as bpv
+import bicm.solver_functions as bsof
+import bicm.validation as bval
 
 
 class BipartiteGraph:
@@ -91,11 +85,10 @@ class BipartiteGraph:
         self.r_theta_xy = None
         self.projected_rows_adj_list = None
         self.projected_cols_adj_list = None
-        self.v_adj_list = None
         self.projection_method = 'poisson'
         self.threads_num = 1
-        self.rows_pvals = None
-        self.cols_pvals = None
+        self._projection_data = {}
+        self._projection_cache = {}
         self.rows_pvals_mat = None
         self.cols_pvals_mat = None
         self.is_rows_projected = False
@@ -419,7 +412,7 @@ class BipartiteGraph:
                 self.y[full_cols] = np.inf
                 if not self.exp:
                     self.theta_x[full_rows] = - np.inf
-                    self.theta_y[full_rows] = - np.inf
+                    self.theta_y[full_cols] = - np.inf
             else:
                 full_rows = np.array([])
                 full_cols = np.array([])
@@ -1073,7 +1066,12 @@ class BipartiteGraph:
         if self.avg_mat is not None:
             return self.avg_mat
         else:
-            self.avg_mat = bnef.bicm_from_fitnesses(self.x, self.y)
+            if self.continuous_weights:
+                self.avg_mat = bnef.biwcm_c_from_fitnesses(self.x, self.y)
+            elif self.weighted:
+                self.avg_mat = bnef.biwcm_d_from_fitnesses(self.x, self.y)
+            else:
+                self.avg_mat = bpv.link_probabilities(self.x[:, None], self.y[None, :])
             return self.avg_mat
 
     def get_bicm_fitnesses(self):
@@ -1091,143 +1089,67 @@ class BipartiteGraph:
 
     def get_fitnesses(self):
         """See get_bicm_fitnesses."""
-        self.get_bicm_fitnesses()
+        return self.get_bicm_fitnesses()
 
-    def pval_calculator(self, v_list_key, x, y):
+    def _projection_arrays(self, rows):
         """
-        Calculate the p-values of the v-motifs numbers of one vertex and all its neighbours.
+        Co-occurrences of the couples of nodes of a layer and their p-values.
 
-        :param int v_list_key: the key of the node to consider for the adjacency list of the v-motifs.
-        :param numpy.ndarray x: the fitnesses of the layer of the desired projection.
-        :param numpy.ndarray y: the fitnesses of the opposite layer.
-        :returns: a dictionary containing as keys the nodes that form v-motifs with the
-            considered node, and as values the corresponding p-values.
+        The opposite layer is grouped in classes of nodes with the same fitness, the
+        nodes whose links are certain (isolated or linked to a whole layer) are
+        accounted for exactly: their contribution is removed from the co-occurrences.
+
+        :returns: the indices of the two nodes of every couple with at least a common
+            neighbour, their number of common neighbours and the p-values.
         """
-        node_xy = x[v_list_key] * y
-        temp_pvals_dict = {}
-        for neighbor in self.v_adj_list[v_list_key]:
-            neighbor_xy = x[neighbor] * y
-            probs = node_xy * neighbor_xy / ((1 + node_xy) * (1 + neighbor_xy))
-            avg_v = np.sum(probs)
-            if self.projection_method == 'poisson':
-                temp_pvals_dict[neighbor] = \
-                    poisson.sf(k=self.v_adj_list[v_list_key][neighbor] - 1, mu=avg_v)
-            elif self.projection_method == 'normal':
-                sigma_v = np.sqrt(np.sum(probs * (1 - probs)))
-                temp_pvals_dict[neighbor] = \
-                    norm.cdf((self.v_adj_list[v_list_key][neighbor] + 0.5 - avg_v) / sigma_v)
-            elif self.projection_method == 'rna':
-                var_v_arr = probs * (1 - probs)
-                sigma_v = np.sqrt(np.sum(var_v_arr))
-                gamma_v = (sigma_v ** (-3)) * np.sum(var_v_arr * (1 - 2 * probs))
-                eval_x = (self.v_adj_list[v_list_key][neighbor] + 0.5 - avg_v) / sigma_v
-                pval = norm.cdf(eval_x) + gamma_v * (1 - eval_x ** 2) * norm.pdf(eval_x) / 6
-                temp_pvals_dict[neighbor] = max(min(pval, 1), 0)
-        return temp_pvals_dict
-
-    def pval_calculator_poibin(self, deg_couple, deg_dict, x, y):
-        """
-        Calculate the p-values of the v-motifs numbers of all nodes with a given couple degrees.
-
-        :param tuple deg_couple: the couple of degrees considered.
-        :param dict deg_dict: node-degrees dictionary.
-        :param numpy.ndarray x: the fitnesses of the layer of the desired projection.
-        :param numpy.ndarray y: the fitnesses of the opposite layer.
-        :returns: a list containing 3-tuples with the two nodes considered and their p-value.
-        """
-        node_xy = x[deg_dict[deg_couple[0]][0]] * y
-        neighbor_xy = x[deg_dict[deg_couple[1]][0]] * y
-        probs = node_xy * neighbor_xy / ((1 + node_xy) * (1 + neighbor_xy))
-        pb_obj = pb.PoiBin(probs)
-        pval_dict = dict()
-        for node1 in deg_dict[deg_couple[0]]:
-            for node2 in deg_dict[deg_couple[1]]:
-                if node2 in self.v_adj_list[node1]:
-                    if node1 not in pval_dict:
-                        pval_dict[node1] = dict()
-                    pval_dict[node1][node2] = pb_obj.pval(int(self.v_adj_list[node1][node2]))
-                elif node1 in self.v_adj_list[node2]:
-                    if node2 not in pval_dict:
-                        pval_dict[node2] = dict()
-                    pval_dict[node2][node1] = pb_obj.pval(int(self.v_adj_list[node2][node1]))
-        return pval_dict
-
-    def _projection_calculator(self):
-        if self.rows_projection:
-            adj_list = self.adj_list
-            inv_adj_list = self.inv_adj_list
-            x = self.x
-            y = self.y
+        n_proj = self.n_rows if rows else self.n_cols
+        if self.biadjacency is not None:
+            biad = scipy.sparse.csr_matrix(self.biadjacency != 0, dtype=np.int64)
         else:
-            adj_list = self.inv_adj_list
-            inv_adj_list = self.adj_list
-            x = self.y
-            y = self.x
+            degs = np.fromiter((len(self.adj_list[i]) for i in range(self.n_rows)), dtype=np.int64,
+                               count=self.n_rows)
+            cols_index = np.fromiter((j for i in range(self.n_rows) for j in self.adj_list[i]),
+                                     dtype=np.int64, count=int(degs.sum()))
+            biad = scipy.sparse.csr_matrix(
+                (np.ones(len(cols_index), dtype=np.int64), cols_index, np.concatenate(([0], np.cumsum(degs)))),
+                shape=(self.n_rows, self.n_cols))
+        if not rows:
+            biad = biad.T.tocsr()
+        cooc = scipy.sparse.triu(biad @ biad.T, k=1).tocoo()
+        order = np.lexsort((cooc.col, cooc.row))
+        pairs_i = cooc.row[order].astype(np.int64)
+        pairs_j = cooc.col[order].astype(np.int64)
+        weight = cooc.data[order].astype(np.int64)
 
-        self.v_adj_list = {k: dict() for k in list(adj_list.keys())}
-        for node_i in np.sort(list(adj_list.keys())):
-            for neighbor in adj_list[node_i]:
-                for node_j in inv_adj_list[neighbor]:
-                    if node_j > node_i:
-                        self.v_adj_list[node_i][node_j] = self.v_adj_list[node_i].get(node_j, 0) + 1
-        if self.projection_method != 'poibin':
-            v_list_keys = list(self.v_adj_list.keys())
-            pval_adj_list = dict()
-            if self.threads_num > 1:
-                with _bu.get_pool(self.threads_num) as pool:
-                    partial_function = partial(self.pval_calculator, x=x, y=y)
-                    if self.progress_bar:
-                        pvals_dicts = pool.map(partial_function, tqdm(v_list_keys))
-                    else:
-                        pvals_dicts = pool.map(partial_function, v_list_keys)
-                for k_i in range(len(v_list_keys)):
-                    k = v_list_keys[k_i]
-                    pval_adj_list[k] = pvals_dicts[k_i]
-            else:
-                if self.progress_bar:
-                    for k in tqdm(v_list_keys):
-                        pval_adj_list[k] = self.pval_calculator(k, x=x, y=y)
-                else:
-                    for k in v_list_keys:
-                        pval_adj_list[k] = self.pval_calculator(k, x=x, y=y)
-        else:
-            if self.rows_projection:
-                degs = self.rows_deg
-            else:
-                degs = self.cols_deg
-            unique_degs = np.unique(degs)
-            deg_dict = {k: [] for k in unique_degs}
-            for k_i in range(len(degs)):
-                deg_dict[degs[k_i]].append(k_i)
+        proj_fit, opp_fit = (self.x, self.y) if rows else (self.y, self.x)
+        fixed_proj, fixed_opp = (self.fixed_rows, self.fixed_cols) if rows else (self.fixed_cols, self.fixed_rows)
+        fixed_proj = np.asarray(fixed_proj, dtype=np.int64)
+        fixed_opp = np.asarray(fixed_opp, dtype=np.int64)
+        free_opp = np.delete(np.arange(len(opp_fit)), fixed_opp)
 
-            v_list_coupled = []
-            deg_couples = [(unique_degs[deg_i], unique_degs[deg_j])
-                           for deg_i in range(len(unique_degs))
-                           for deg_j in range(deg_i, len(unique_degs))]
-            if self.progress_bar:
-                print('Calculating p-values...')
-            if self.threads_num > 1:
-                with _bu.get_pool(self.threads_num) as pool:
-                    partial_function = partial(self.pval_calculator_poibin, deg_dict=deg_dict, x=x, y=y)
-                    if self.progress_bar:
-                        pvals_dicts = pool.map(partial_function, tqdm(deg_couples))
-                    else:
-                        pvals_dicts = pool.map(partial_function, deg_couples)
-            else:
-                pvals_dicts = []
-                if self.progress_bar:
-                    for deg_couple in tqdm(deg_couples):
-                        pvals_dicts.append(
-                            self.pval_calculator_poibin(deg_couple, deg_dict=deg_dict, x=x, y=y))
-                else:
-                    for deg_couple in deg_couples:
-                        pvals_dicts.append(
-                            self.pval_calculator_poibin(deg_couple, deg_dict=deg_dict, x=x, y=y))
-            pval_adj_list = {k: dict() for k in self.v_adj_list}
-            for pvals_dict in pvals_dicts:
-                for node in pvals_dict:
-                    pval_adj_list[node].update(pvals_dict[node])
-        return pval_adj_list
+        def probabilities(proj_nodes, opp_nodes):
+            if self.avg_mat is not None:
+                avg_mat = self.avg_mat if rows else self.avg_mat.T
+                return np.asarray(avg_mat[np.ix_(proj_nodes, opp_nodes)], dtype=np.float64)
+            return bpv.link_probabilities(proj_fit[proj_nodes][:, None], opp_fit[opp_nodes][None, :])
+
+        proj_fit = np.array(proj_fit, dtype=np.float64)
+        if len(fixed_proj) > 0 and len(free_opp) > 0:
+            # The links of these nodes with the nodes of the other layer are certain.
+            certain = probabilities(fixed_proj, free_opp[:1]).ravel() > 0.5
+            proj_fit[fixed_proj] = np.where(certain, np.inf, 0.0)
+        if len(fixed_opp) > 0 and len(weight) > 0:
+            # Common neighbours that are certain: they are not part of the random variable.
+            certain = scipy.sparse.csr_matrix(
+                (probabilities(np.arange(n_proj), fixed_opp) > 0.5).astype(np.int64))
+            for start in range(0, len(weight), 1_000_000):
+                chunk = slice(start, start + 1_000_000)
+                weight[chunk] -= np.asarray(
+                    certain[pairs_i[chunk]].multiply(certain[pairs_j[chunk]]).sum(axis=1)).ravel()
+        x_u, n_c = np.unique(opp_fit[free_opp], return_counts=True)
+        pvals = bpv.cooccurrence_pvalues(x_u, n_c, proj_fit, pairs_i, pairs_j, weight,
+                                          method=self.projection_method, n_jobs=self.threads_num)
+        return pairs_i, pairs_j, cooc.data[order].astype(np.int64), pvals
 
     def compute_projection(self, rows=True, alpha=0.05, approx_method=None, method=None,
                            threads_num=None, progress_bar=True, validation_method='fdr'):
@@ -1235,14 +1157,22 @@ class BipartiteGraph:
         If the BiCM has not been computed, it also computes it with standard settings.
         This is the most customizable method for the pvalues computation.
 
+        Two nodes of a layer are linked in the projection if the number of their
+        common neighbours is significantly larger than expected by the BiCM. The
+        p-value of a couple is the probability that the BiCM generates at least as
+        many common neighbours as observed.
+
         :param bool rows: True if requesting the rows' projection.
         :param float alpha: Threshold for the p-values validation.
-        :param str approx_method: Method for the approximation of the pvalues computation.
-            Implemented methods are *poisson*, *poibin*, *normal*, *rna*.
+        :param str approx_method: Method for the pvalues computation: *poisson* (default),
+            *normal* and *rna* (refined normal approximation) are approximations of the
+            distribution of the number of common neighbours, *poibin* (or *exact*)
+            is its exact Poisson-binomial distribution.
         :param str method: Deprecated, same as approx_method.
-        :param threads_num: Number of threads to use for the parallelization. If it is set to 1,
-            the computation is not parallelized.
-        :param bool progress_bar: Show progress bar of the pvalues computation.
+        :param int threads_num: Number of threads to use for the computation.
+            By default all the threads available to numba are used.
+        :param bool progress_bar: Deprecated and ignored: the computation is now fast enough
+            not to need a progress bar.
         :param str validation_method:  The type of validation to apply: 'global' for a global threshold,
          'fdr' for False Discovery Rate or 'bonferroni' for Bonferroni correction.
         """
@@ -1252,9 +1182,9 @@ class BipartiteGraph:
                 approx_method = method
             else:
                 approx_method = 'poisson'
-        self.rows_projection = rows
-        self.projection_method = approx_method
-        self.progress_bar = progress_bar
+        if approx_method not in bpv.PVALUE_METHODS + ('exact',):
+            raise ValueError('approx_method must be "poisson", "poibin", "normal" or "rna".')
+        bval.pvalue_threshold([], method=validation_method)  # check the name of the method
         if self.weighted:
             _bu.warn('Weighted projection not yet implemented.')
             return
@@ -1264,33 +1194,75 @@ class BipartiteGraph:
             return
         if alpha >= 1:
             _bu.warn('alpha larger than 1 will yield a full projection.')
-        if threads_num is None:
-            if system() == 'Windows':
-                threads_num = 1
-            else:
-                threads_num = 4
-        else:
-            if system() == 'Windows' and threads_num != 1:
-                threads_num = 1
-                _bu.warn('Parallel processes not yet implemented on Windows, computing anyway...')
-        self.threads_num = threads_num
+        self.rows_projection = rows
+        self.projection_method = approx_method
+        self.progress_bar = progress_bar
         if not self.is_randomized:
             _bu.logger.info('First I have to compute the BiCM. Computing...')
             self.solve_tool()
+        layer = 'rows' if rows else 'columns'
+        max_threads = numba.config.NUMBA_NUM_THREADS
+        self.threads_num = max_threads if threads_num is None else max(1, min(int(threads_num), max_threads))
+        previous_threads = numba.get_num_threads()
+        numba.set_num_threads(self.threads_num)
+        try:
+            pairs_i, pairs_j, weight, pvals = self._projection_arrays(rows)
+        finally:
+            numba.set_num_threads(previous_threads)
+        self._projection_data[layer] = {
+            'pairs_i': pairs_i, 'pairs_j': pairs_j, 'weight': weight, 'pvals': pvals,
+            'approx_method': approx_method,
+        }
+        self._projection_cache = {key: val for key, val in self._projection_cache.items() if key[0] != layer}
         if rows:
-            self.rows_pvals = self._projection_calculator()
-            self.projected_rows_adj_list = self._projection_from_pvals(alpha=alpha,
-                                                                       validation_method=validation_method)
+            self.rows_pvals_mat = None
             self.is_rows_projected = True
         else:
-            self.cols_pvals = self._projection_calculator()
-            self.projected_cols_adj_list = self._projection_from_pvals(alpha=alpha,
-                                                                       validation_method=validation_method)
+            self.cols_pvals_mat = None
             self.is_cols_projected = True
-                
+        self._projection_from_pvals(alpha=alpha, validation_method=validation_method)
+
+    def _pairs_dictionary(self, layer, key):
+        """Dictionary of dictionaries {node: {neighbor: value}} of a quantity of the projection."""
+        if layer not in self._projection_data:
+            return None
+        if (layer, key) not in self._projection_cache:
+            data = self._projection_data[layer]
+            n_nodes = self.n_rows if layer == 'rows' else self.n_cols
+            out = {node: dict() for node in range(n_nodes)}
+            for node, neighbor, value in zip(data['pairs_i'].tolist(), data['pairs_j'].tolist(),
+                                             data[key].tolist()):
+                out[node][neighbor] = value
+            self._projection_cache[(layer, key)] = out
+        return self._projection_cache[(layer, key)]
+
+    @property
+    def rows_pvals(self):
+        """P-values of the couples of rows with common neighbours, as {node: {neighbor: p-value}}
+        with ``node < neighbor``. None if the rows projection has not been computed."""
+        return self._pairs_dictionary('rows', 'pvals')
+
+    @property
+    def cols_pvals(self):
+        """P-values of the couples of columns with common neighbours, as {node: {neighbor: p-value}}
+        with ``node < neighbor``. None if the columns projection has not been computed."""
+        return self._pairs_dictionary('columns', 'pvals')
+
+    @property
+    def v_adj_list(self):
+        """Number of common neighbours (V-motifs) of the couples of nodes of the last projected
+        layer, as {node: {neighbor: number}} with ``node < neighbor``."""
+        if self.rows_projection is None:
+            return None
+        return self._pairs_dictionary('rows' if self.rows_projection else 'columns', 'weight')
+
     def compute_weighted_pvals_mat(self):
         """
         Compute the pvalues matrix representing the significance of the original matrix.
+
+        The p-value of a link is the probability that the model assigns to the link a
+        weight at least as large as the observed one. For binary networks it is the
+        probability of the link. The entries without a link have p-value one.
         """
         if self.biadjacency is None:
             assert self.edgelist is not None or self.adj_list is not None, 'Graph links must be given in some format!'
@@ -1302,9 +1274,15 @@ class BipartiteGraph:
         if not self.is_randomized:
             _bu.logger.info('First I have to compute the BiCM. Computing...')
             self.solve_tool()
+        biadjacency = self.biadjacency.toarray() if scipy.sparse.issparse(self.biadjacency) \
+            else np.asarray(self.biadjacency)
         if not self.weighted:
-            self.pvals_mat = self.avg_mat ** self.biadjacency
-        self.pvals_mat = (np.tile(self.x, (len(self.y), 1)).T * np.tile(self.y, (len(self.x), 1))) ** self.biadjacency
+            self.pvals_mat = np.where(biadjacency != 0, self.get_bicm_matrix(), 1.0)
+        else:
+            # P(w >= w_obs) = (x * y) ** w_obs, computed in logarithms
+            with np.errstate(divide='ignore', invalid='ignore'):
+                log_pvals = (np.log(self.x)[:, None] + np.log(self.y)[None, :]) * biadjacency
+            self.pvals_mat = np.where(biadjacency != 0, np.exp(log_pvals), 1.0)
 
     def get_weighted_pvals_mat(self):
         """
@@ -1317,11 +1295,11 @@ class BipartiteGraph:
     def get_validated_matrix(self, significance=0.01, validation_method=None):
         """
         Extract a backbone of the original network keeping only the most significant links.
-        At the moment this method only applies a global significance level for any link.
 
         :param float significance:  Threshold for the pvalues significance.
         :param str validation_method:  The type of validation to apply: 'global' for a global threshold,
          'fdr' for False Discovery Rate or 'bonferroni' for Bonferroni correction.
+         The number of tests is the number of entries of the matrix.
         """
         if self.pvals_mat is None:
             self.compute_weighted_pvals_mat()
@@ -1329,31 +1307,17 @@ class BipartiteGraph:
             _bu.logger.info('FDR validated matrix will be returned by default. '
                             'Set validation_method to "global" or "bonferroni" for alternatives or use .get_weighted_pvals_mat.')
             validation_method = 'fdr'
-        assert validation_method in ['bonferroni', 'fdr', 'global'], 'validation_method must be a valid string'
-        pvals_array = self.pvals_mat.flatten()
-        val_threshold = self._pvals_validator(pvals_array, alpha=significance, validation_method=validation_method)
-        return (self.pvals_mat <= val_threshold).astype(np.ubyte)
+        validated = bval.validate_pvalues(self.pvals_mat, alpha=significance, method=validation_method)[0]
+        return validated.astype(np.ubyte)
 
     def _pvals_validator(self, pval_list, alpha=0.05, validation_method='fdr'):
-        sorted_pvals = np.sort(pval_list)
-        if self.rows_projection:
-            tests_num = (self.n_rows * (self.n_rows - 1)) / 2
-        else:
-            tests_num = (self.n_cols * (self.n_cols - 1)) / 2
-        multiplier = alpha / tests_num
-        eff_fdr_th = alpha
-        if validation_method == 'bonferroni':
-            eff_fdr_th = multiplier
-            if sorted_pvals[0] > eff_fdr_th:
-                _bu.warn('No V-motifs will be validated. Try increasing alpha', stacklevel=5)
-        elif validation_method == 'fdr':
-            try:
-                eff_fdr_pos = np.where(sorted_pvals <= (np.arange(1, len(sorted_pvals) + 1) * multiplier))[0][-1]
-            except IndexError:
-                _bu.warn('No V-motifs will be validated. Try increasing alpha', stacklevel=5)
-                eff_fdr_pos = 0
-            eff_fdr_th = (eff_fdr_pos + 1) * multiplier  # +1 because of Python numbering: our pvals are ordered 1,...,n
-        return eff_fdr_th
+        """Threshold of the p-values of the projection: every couple of nodes of the layer is a test."""
+        n_nodes = self.n_rows if self.rows_projection else self.n_cols
+        threshold = bval.pvalue_threshold(pval_list, alpha=alpha, method=validation_method,
+                                          n_tests=max(n_nodes * (n_nodes - 1) // 2, len(pval_list)))
+        if len(pval_list) == 0 or np.min(pval_list) > threshold:
+            _bu.warn('No V-motifs will be validated. Try increasing alpha', stacklevel=5)
+        return threshold
 
     def _projection_from_pvals(self, alpha=0.05, validation_method='fdr'):
         """Internal method to build the projected network from pvalues.
@@ -1361,125 +1325,123 @@ class BipartiteGraph:
         :param float alpha:  Threshold for the validation.
         :param str validation_method:  The type of validation to apply.
         """
-        pval_list = []
-        if self.rows_projection:
-            pvals_adj_list = self.rows_pvals
-        else:
-            pvals_adj_list = self.cols_pvals
-        projected_adj_list = dict([])
+        layer = 'rows' if self.rows_projection else 'columns'
+        data = self._projection_data[layer]
         if alpha >= 1:
-            for node in range(len(self.adj_list) - 1):
-                for neighbor in np.arange(node + 1, len(self.adj_list)):
-                    if node not in projected_adj_list:
-                        projected_adj_list[node] = []
-                    projected_adj_list[node].append(neighbor)
-            return projected_adj_list
-        for node in pvals_adj_list:
-            for neighbor in pvals_adj_list[node]:
-                pval_list.append(pvals_adj_list[node][neighbor])
-        eff_fdr_th = self._pvals_validator(pval_list, alpha=alpha, validation_method=validation_method)
-        for node in self.v_adj_list:
-            for neighbor in self.v_adj_list[node]:
-                if pvals_adj_list[node][neighbor] <= eff_fdr_th:
-                    if node not in projected_adj_list:
-                        projected_adj_list[node] = []
-                    projected_adj_list[node].append(neighbor)
+            n_nodes = self.n_rows if self.rows_projection else self.n_cols
+            links_i, links_j = np.triu_indices(n_nodes, k=1)
+        else:
+            threshold = self._pvals_validator(data['pvals'], alpha=alpha, validation_method=validation_method)
+            validated = data['pvals'] <= threshold
+            links_i, links_j = data['pairs_i'][validated], data['pairs_j'][validated]
+        data['alpha'] = alpha
+        data['validation_method'] = validation_method
+        data['links'] = (links_i, links_j)
+        projected_adj_list = dict()
+        for node, neighbor in zip(links_i.tolist(), links_j.tolist()):
+            projected_adj_list.setdefault(node, []).append(neighbor)
+        if self.rows_projection:
+            self.projected_rows_adj_list = projected_adj_list
+        else:
+            self.projected_cols_adj_list = projected_adj_list
         return projected_adj_list
 
+    def _get_projection(self, rows, alpha, method, threads_num, progress_bar, fmt, validation_method):
+        if fmt not in ('adjacency_list', 'edgelist', 'array', 'sparse'):
+            raise ValueError('fmt must be "adjacency_list", "edgelist", "array" or "sparse".')
+        layer = 'rows' if rows else 'columns'
+        data = self._projection_data.get(layer)
+        if data is None or (method is not None and method != data['approx_method']):
+            self.compute_projection(rows=rows, alpha=0.05 if alpha is None else alpha,
+                                    approx_method='poisson' if method is None else method,
+                                    threads_num=threads_num, progress_bar=progress_bar,
+                                    validation_method='fdr' if validation_method is None else validation_method)
+            data = self._projection_data.get(layer)
+            if data is None:  # the projection cannot be computed
+                return None
+        elif (alpha is not None and alpha != data['alpha']) or \
+                (validation_method is not None and validation_method != data['validation_method']):
+            # Same p-values, different validation
+            self.rows_projection = rows
+            self._projection_from_pvals(
+                alpha=data['alpha'] if alpha is None else alpha,
+                validation_method=data['validation_method'] if validation_method is None else validation_method)
+        if fmt in ('array', 'sparse'):
+            links_i, links_j = data['links']
+            n_nodes = self.n_rows if rows else self.n_cols
+            adjacency = scipy.sparse.coo_matrix((np.ones(len(links_i), dtype=np.ubyte), (links_i, links_j)),
+                                                shape=(n_nodes, n_nodes)).tocsr()
+            adjacency = adjacency + adjacency.T
+            return adjacency if fmt == 'sparse' else adjacency.toarray()
+        projected_adj_list = self.projected_rows_adj_list if rows else self.projected_cols_adj_list
+        names = self.rows_dict if rows else self.cols_dict
+        if names is not None:
+            projected_adj_list = {names[node]: [names[neighbor] for neighbor in neighbors]
+                                  for node, neighbors in projected_adj_list.items()}
+        if fmt == 'adjacency_list':
+            return projected_adj_list
+        return bnef.edgelist_from_adjacency_list_bipartite(projected_adj_list)
+
     def get_rows_projection(self,
-                            alpha=0.05,
-                            method='poisson',
+                            alpha=None,
+                            method=None,
                             threads_num=None,
                             progress_bar=True,
                             fmt='adjacency_list',
-                            validation_method='fdr'):
+                            validation_method=None):
         """Get the projected network on the rows layer of the graph.
 
+        If the projection has not been computed yet it is computed with the given
+        parameters, or with the default ones (alpha 0.05, *poisson* method, *fdr* validation).
+        If it has been computed, the parameters that are not passed keep the
+        values of the last computation, the others update the projection.
+
         :param alpha: threshold for the validation of the projected edges.
         :type alpha: float, optional
-        :param method: approximation method for the calculation of the p-values.
+        :param method: method for the calculation of the p-values.
             Implemented choices are: poisson, poibin, normal, rna
         :type method: str, optional
-        :param threads_num: number of threads to use for the parallelization. If it is set to 1,
-            the computation is not parallelized.
+        :param threads_num: number of threads to use for the computation.
         :type threads_num: int, optional
-        :param bool progress_bar: Show the progress bar
-        :param str fmt: the desired format for the output: adjacency_list (default) or edgelist
-        :returns: the projected network on the rows layer, in the format specified by fmt
+        :param bool progress_bar: deprecated and ignored.
+        :param str fmt: the desired format for the output: *adjacency_list* (default) or *edgelist*,
+            with the names of the nodes, *array* or *sparse* for the adjacency matrix of the
+            projection as a numpy array or a scipy sparse matrix, with the nodes in the order
+            of the biadjacency matrix (the order of ``rows_dict`` for other inputs).
         :param str validation_method:  The type of validation to apply: 'global' for a global threshold,
          'fdr' for False Discovery Rate or 'bonferroni' for Bonferroni correction.
+        :returns: the projected network on the rows layer, in the format specified by fmt
         """
-        if not self.is_rows_projected:
-            self.compute_projection(rows=True, alpha=alpha, approx_method=method, threads_num=threads_num,
-                                    progress_bar=progress_bar, validation_method=validation_method)
-
-        if self.rows_dict is None:
-            adj_list_to_return = self.projected_rows_adj_list
-        else:
-            adj_list_to_return = {}
-            for node in self.projected_rows_adj_list:
-                adj_list_to_return[self.rows_dict[node]] = []
-                for neighbor in self.projected_rows_adj_list[node]:
-                    adj_list_to_return[self.rows_dict[node]].append(self.rows_dict[neighbor])
-        if fmt == 'adjacency_list':
-            return adj_list_to_return
-        elif fmt == 'edgelist':
-            return bnef.edgelist_from_adjacency_list_bipartite(adj_list_to_return)
+        return self._get_projection(True, alpha, method, threads_num, progress_bar, fmt, validation_method)
 
     def get_cols_projection(self,
-                            alpha=0.05,
-                            method='poisson',
+                            alpha=None,
+                            method=None,
                             threads_num=None,
                             progress_bar=True,
-                            fmt='adjacency_list'):
+                            fmt='adjacency_list',
+                            validation_method=None):
         """Get the projected network on the columns layer of the graph.
 
-        :param alpha: threshold for the validation of the projected edges.
-        :type alpha: float, optional
-        :param method: approximation method for the calculation of the p-values.
-            Implemented choices are: poisson, poibin, normal, rna
-        :type method: str, optional
-        :param threads_num: number of threads to use for the parallelization. If it is set to 1,
-            the computation is not parallelized.
-        :type threads_num: int, optional
-        :param bool progress_bar: Show the progress bar
-        :param str fmt: the desired format for the output: adjacency_list (default) or edgelist
+        The parameters are those of :meth:`get_rows_projection`.
+
         :returns: the projected network on the columns layer, in the format specified by fmt
         """
-        if not self.is_cols_projected:
-            self.compute_projection(rows=False,
-                                    alpha=alpha, approx_method=method, threads_num=threads_num, progress_bar=progress_bar)
-        if self.cols_dict is None:
-            return self.projected_cols_adj_list
-        else:
-            adj_list_to_return = {}
-            for node in self.projected_cols_adj_list:
-                adj_list_to_return[self.cols_dict[node]] = []
-                for neighbor in self.projected_cols_adj_list[node]:
-                    adj_list_to_return[self.cols_dict[node]].append(self.cols_dict[neighbor])
-        if fmt == 'adjacency_list':
-            return adj_list_to_return
-        elif fmt == 'edgelist':
-            return bnef.edgelist_from_adjacency_list_bipartite(adj_list_to_return)
-        
+        return self._get_projection(False, alpha, method, threads_num, progress_bar, fmt, validation_method)
+
     def _compute_projected_pvals_mat(self, layer='rows'):
         """
-        Compute the pvalues matrix representing the significance of the original matrix.
+        Compute the symmetric matrix of the p-values of the projection on a layer.
+        The couples of nodes without common neighbours have p-value one.
         """
-        if layer == 'rows':
-            n_dim = self.n_rows
-            pval_adjlist = self.rows_pvals
-        elif layer == 'columns':
-            n_dim = self.n_cols
-            pval_adjlist = self.cols_pvals
+        data = self._projection_data[layer]
+        n_dim = self.n_rows if layer == 'rows' else self.n_cols
         pval_mat = np.ones((n_dim, n_dim))
-        for v in pval_adjlist:
-            for w in pval_adjlist[v]:
-                pval_mat[v,w] = pval_adjlist[v][w]
-                pval_mat[w,v] = pval_mat[v,w]
+        pval_mat[data['pairs_i'], data['pairs_j']] = data['pvals']
+        pval_mat[data['pairs_j'], data['pairs_i']] = data['pvals']
         if layer == 'rows':
             self.rows_pvals_mat = pval_mat
-        elif layer == 'columns':
+        else:
             self.cols_pvals_mat = pval_mat
 
     def get_projected_pvals_mat(self, layer=None):
@@ -1571,9 +1533,21 @@ class BipartiteGraph:
         self.biadjacency = None
         self.edgelist = None
         self.adj_list = None
+        self.inv_adj_list = None
         self.rows_deg = None
         self.cols_deg = None
+        self.avg_mat = None
+        self.pvals_mat = None
         self.is_initialized = False
+        self.is_randomized = False
+        self.is_rows_projected = False
+        self.is_cols_projected = False
+        self.projected_rows_adj_list = None
+        self.projected_cols_adj_list = None
+        self.rows_pvals_mat = None
+        self.cols_pvals_mat = None
+        self._projection_data = {}
+        self._projection_cache = {}
 
     def model_loglikelihood(self):
         """Returns the loglikelihood of the solution of last model executed.

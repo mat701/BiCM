@@ -19,3 +19,15 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+
+
+Third-party code
+----------------
+
+The subpackage bicm.wbnm is the wbnm package (https://github.com/lbuffa/wbnm),
+Copyright (c) 2026 Lorenzo Buffa, Daniele Cirulli.
+
+The modules bicm.fast_projection and bicm.pvalues are based on the
+fast_bicm_exact package, Copyright (c) 2026 Antonio Desiderio.
+
+Both are distributed under the MIT License reproduced above.

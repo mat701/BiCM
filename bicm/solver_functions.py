@@ -1,8 +1,22 @@
-import numpy as np
-import scipy.sparse
-import scipy
-from numba import jit
+import functools
 import time
+import warnings
+
+import numpy as np
+import scipy
+import scipy.sparse
+from numba import jit
+from numba.core.errors import NumbaExperimentalFeatureWarning
+
+
+def _silence_numba_experimental_warning(function):
+    """The line search receives jitted functions as arguments, an experimental feature of numba."""
+    @functools.wraps(function)
+    def wrapper(*args, **kwargs):
+        with warnings.catch_warnings():
+            warnings.simplefilter('ignore', NumbaExperimentalFeatureWarning)
+            return function(*args, **kwargs)
+    return wrapper
 
 
 def matrix_regulariser_function(b, eps):
@@ -68,6 +82,7 @@ def sufficient_decrease_condition(
     return bool(f_new < sup)
 
 
+@_silence_numba_experimental_warning
 def solver(
     x0,
     fun,

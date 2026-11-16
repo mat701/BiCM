@@ -8,6 +8,8 @@ each in its own process:
     python wol_worker.py --networks data/networks.json --output results/old.pkl --bicm-path bicm_old
 
 ``--bicm-path`` is a folder containing the ``bicm`` package to import instead of the installed one.
+With ``--weighted`` it runs the weighted models (BiWCM_d and BiWCM_c) on the weighted networks
+and computes the p-values of their links, instead of the projections.
 """
 import argparse
 import contextlib
@@ -67,6 +69,84 @@ def load_networks(path):
     return dict(sorted(networks.items(), key=lambda item: (item[1][0].size, item[0])))
 
 
+def load_weighted_networks(path):
+    """Weighted biadjacency matrices {name: matrix} of the networks that have weights different from one."""
+    edges = defaultdict(list)
+    with open(path) as handle:
+        for edge in json.load(handle):
+            if float(edge['connection_strength']) > 0:
+                edges[edge['network_name']].append(
+                    (edge['species1'], edge['species2'], float(edge['connection_strength'])))
+    networks = {}
+    for name, links in edges.items():
+        if all(link[2] == 1 for link in links):
+            continue
+        rows = {node: i for i, node in enumerate(sorted({link[0] for link in links}))}
+        cols = {node: i for i, node in enumerate(sorted({link[1] for link in links}))}
+        matrix = np.zeros((len(rows), len(cols)))
+        for row, col, weight in links:
+            matrix[rows[row], cols[col]] = weight
+        networks[name] = matrix
+    return dict(sorted(networks.items(), key=lambda item: (item[1].size, item[0])))
+
+
+def weighted_models(matrix):
+    """Models to solve on a weighted matrix: the discrete one needs integer weights."""
+    if np.all(matrix == np.round(matrix)):
+        return ('biwcm_d', 'biwcm_c')
+    return ('biwcm_c',)
+
+
+def run_weighted(args, bicm, BipartiteGraph):
+    """Solve the weighted models, compute the p-values of the links and validate them."""
+    networks = load_weighted_networks(args.networks)
+    if args.limit:
+        networks = dict(list(networks.items())[:args.limit])
+    rng = np.random.default_rng(0)
+    warm = rng.poisson(2.0, size=(8, 10)) + 1
+    with contextlib.redirect_stdout(io.StringIO()):
+        for model in ('biwcm_d', 'biwcm_c'):
+            graph = BipartiteGraph(biadjacency=warm)
+            graph.solve_tool(model=model, print_error=False)
+            graph.get_validated_matrix(significance=0.01, validation_method='fdr')
+    results = {'__version__': bicm.__version__}
+    start = time.time()
+    for count, (name, matrix) in enumerate(networks.items(), 1):
+        for model in weighted_models(matrix):
+            record = {'shape': matrix.shape}
+            results[(name, model)] = record
+            try:
+                with contextlib.redirect_stdout(io.StringIO()), time_limit(args.timeout):
+                    graph = BipartiteGraph(biadjacency=matrix.astype(int) if model == 'biwcm_d' else matrix)
+                    tic = time.perf_counter()
+                    graph.solve_tool(model=model, print_error=False)
+                    record['solve_time'] = time.perf_counter() - tic
+                    record['x'] = np.array(graph.x, dtype=float)
+                    record['y'] = np.array(graph.y, dtype=float)
+                    record['theta_x'] = np.array(graph.theta_x, dtype=float)
+                    record['theta_y'] = np.array(graph.theta_y, dtype=float)
+                    # Largest relative error of the expected strengths, from the matrix the user gets
+                    expected = np.asarray(graph.get_bicm_matrix(), dtype=float)
+                    record['strength_error'] = float(max(
+                        np.abs(expected.sum(1) / matrix.sum(1) - 1).max(),
+                        np.abs(expected.sum(0) / matrix.sum(0) - 1).max()))
+                    tic = time.perf_counter()
+                    record['pvals'] = np.array(graph.get_weighted_pvals_mat(), dtype=float)
+                    record['pvals_time'] = time.perf_counter() - tic
+                    record['validated'] = {
+                        method: np.array(graph.get_validated_matrix(significance=args.alpha,
+                                                                    validation_method=method), dtype=bool)
+                        for method in ('fdr', 'bonferroni', 'global')}
+            except TimeLimit:
+                record['skipped'] = 'time limit'
+            except Exception as error:  # noqa: BLE001
+                record['error'] = repr(error)
+        if count % 20 == 0 or count == len(networks):
+            print('{:4d} / {} networks, {:.0f} s'.format(count, len(networks), time.time() - start), flush=True)
+    with open(args.output, 'wb') as handle:
+        pickle.dump(results, handle)
+
+
 def pairs_arrays(pvals):
     """Flatten {node: {neighbor: p-value}} in three arrays sorted by couple."""
     flat = sorted((i, j, p) for i, neighbors in pvals.items() for j, p in neighbors.items())
@@ -92,6 +172,9 @@ def run(args):
     from bicm import BipartiteGraph
     print('bicm', bicm.__version__, 'from', bicm.__file__, flush=True)
     warnings.simplefilter('ignore')
+    if args.weighted:
+        run_weighted(args, bicm, BipartiteGraph)
+        return
     networks = load_networks(args.networks)
     if args.limit:
         networks = dict(list(networks.items())[:args.limit])
@@ -161,5 +244,6 @@ if __name__ == '__main__':
     parser.add_argument('--timeout', type=int, default=0, help='time limit in seconds of one projection')
     parser.add_argument('--max-poibin-cost', type=float, default=0,
                         help='skip the exact method above this estimated cost (version 3 only)')
+    parser.add_argument('--weighted', action='store_true', help='run the weighted models instead of the projections')
     parser.add_argument('--limit', type=int, default=0, help='run only the smallest networks')
     run(parser.parse_args())

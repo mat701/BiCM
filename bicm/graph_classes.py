@@ -848,7 +848,7 @@ class BipartiteGraph:
                 )
             self._set_solved_problem(sol)
             if self.continuous_weights:
-                r_avg_mat = bnef.biwcm_c_from_fitnesses(self.x[self.nonfixed_rows], self.y[self.nonfixed_cols])
+                r_avg_mat = 1 / self._continuous_rates()[np.ix_(self.nonfixed_rows, self.nonfixed_cols)]
             elif self.weighted:
                 r_avg_mat = bnef.biwcm_d_from_fitnesses(self.x[self.nonfixed_rows], self.y[self.nonfixed_cols])
             else:
@@ -940,7 +940,7 @@ class BipartiteGraph:
             eps=None,
             max_steps=None,
             verbose=False,
-            linsearch=True,
+            linsearch=None,
             regularise=None,
             print_error=True,
             full_return=False,
@@ -960,7 +960,8 @@ class BipartiteGraph:
         :param float eps: Tolerance of the difference between consecutive solutions, optional
         :param int max_steps: Maximum number of steps, optional
         :param bool, optional verbose: Print elapsed time, errors and iteration steps, optional
-        :param bool linsearch: Implement the linesearch when searching for roots, default is True
+        :param bool linsearch: Implement the linesearch when searching for roots. Default is True, except for
+            the fixed-point solver of the continuous weighted model (BiWCM_c), which stalls with it.
         :param bool regularise: Regularise the matrices in the computations, optional
         :param bool print_error: Print the final error of the solution
         :param bool full_return: If True, the solver returns some more insights on the convergence. Default False.
@@ -985,6 +986,8 @@ class BipartiteGraph:
             #     method = 'quasinewton'
             else:
                 method = 'newton'
+        if linsearch is None:
+            linsearch = not (self.continuous_weights and method == 'fixed-point')
         if not self.is_initialized:
             _bu.warn('Graph is not initialized. I can\'t compute the BiCM.')
             return
@@ -1074,12 +1077,26 @@ class BipartiteGraph:
             return self.avg_mat
         else:
             if self.continuous_weights:
-                self.avg_mat = bnef.biwcm_c_from_fitnesses(self.x, self.y)
+                with np.errstate(divide='ignore'):
+                    self.avg_mat = 1 / self._continuous_rates()
             elif self.weighted:
                 self.avg_mat = bnef.biwcm_d_from_fitnesses(self.x, self.y)
             else:
                 self.avg_mat = bpv.link_probabilities(self.x[:, None], self.y[None, :])
             return self.avg_mat
+
+    def _continuous_rates(self):
+        """
+        Matrix of the rates theta_x + theta_y of the exponential distributions of the BiWCM_c.
+
+        The expected weights are their inverse. The rates are taken from the Lagrange
+        multipliers theta and not from the fitnesses x = exp(-theta), which underflow
+        to zero when the weights are much smaller than one.
+        """
+        if self.theta_x is not None and self.theta_y is not None:
+            return self.theta_x[:, None] + self.theta_y[None, :]
+        with np.errstate(divide='ignore'):
+            return - np.log(self.x)[:, None] - np.log(self.y)[None, :]
 
     def get_bicm_fitnesses(self):
         """Get the fitnesses of the BiCM.
@@ -1284,11 +1301,15 @@ class BipartiteGraph:
             else np.asarray(self.biadjacency)
         if not self.weighted:
             self.pvals_mat = np.where(biadjacency != 0, self.get_bicm_matrix(), 1.0)
+        elif self.continuous_weights:
+            # P(w >= w_obs) = exp(- (theta_x + theta_y) * w_obs)
+            with np.errstate(invalid='ignore', over='ignore'):
+                self.pvals_mat = np.where(biadjacency != 0, np.exp(- self._continuous_rates() * biadjacency), 1.0)
         else:
-            # P(w >= w_obs) = (x * y) ** w_obs, computed in logarithms
-            with np.errstate(divide='ignore', invalid='ignore'):
-                log_pvals = (np.log(self.x)[:, None] + np.log(self.y)[None, :]) * biadjacency
-            self.pvals_mat = np.where(biadjacency != 0, np.exp(log_pvals), 1.0)
+            # P(w >= w_obs) = (x * y) ** w_obs
+            with np.errstate(invalid='ignore'):
+                self.pvals_mat = np.where(biadjacency != 0,
+                                          np.power(self.x[:, None] * self.y[None, :], biadjacency), 1.0)
 
     def get_weighted_pvals_mat(self):
         """

@@ -215,7 +215,11 @@ def solver(
         # discending direction computation
         tic = time.time()
         if method == "newton":
-            dx = np.linalg.solve(b_matrix, -f)
+            try:
+                dx = np.linalg.solve(b_matrix, -f)
+            except np.linalg.LinAlgError:
+                # Singular Hessian: take the least squares solution of the Newton step
+                dx = np.linalg.lstsq(b_matrix, -f, rcond=None)[0]
             # dx = dx/np.linalg.norm(dx)
         elif method == "quasinewton":
             dx = -f / b_matrix

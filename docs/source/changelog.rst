@@ -29,10 +29,13 @@ Numerical accuracy and fixed bugs. **Please re-run your analysis if you are affe
 * A projection with ``alpha >= 1`` on the columns layer used the number of rows.
 * ``get_bicm_matrix`` returned nan for the nodes linked to a whole layer when the graph was not initialized with a dense matrix.
 * The projections failed on perfectly nested networks, where every link is certain: they now return p-values equal to one.
+* BiWCM_c: the expected matrix and the p-values of the links were computed from the fitnesses ``x = exp(-theta)``, which underflow to zero when the weights are much smaller than one. They are now computed from ``theta``.
+* BiWCM_c: the line search of the fixed-point solver could stall far from the solution. It is now off by default for this solver (``linsearch=None``), which is also much faster.
+* BiWCM_d: a singular Hessian in the Newton step raised ``LinAlgError``. The step now falls back to its least squares solution.
 * :class:`~bicm.poibin.PoiBin` computes the distribution with an exact convolution: its p-values are accurate also when extremely small.
 * In :mod:`bicm.wbnm` the analytical p-values are computed in logarithms, the Monte Carlo p-values cannot be zero any more, and the multiple testing correction of the projections is applied to the distinct couples of nodes only.
 
-Benchmark: the notebook ``benchmarks/web_of_life/web_of_life_benchmark.ipynb`` runs versions 3.5 and 4.0 on all the networks of the `Web of Life <https://www.web-of-life.es/>`_ database and compares running times, p-values and validated links.
+Benchmark: the notebook ``benchmarks/web_of_life/web_of_life_benchmark.ipynb`` runs versions 3.5 and 4.0 on all the networks of the `Web of Life <https://www.web-of-life.es/>`_ database and compares running times, p-values and validated links of the projections, and the weighted models BiWCM_d and BiWCM_c on its weighted networks.
 
 Differences from the two packages that were merged:
 

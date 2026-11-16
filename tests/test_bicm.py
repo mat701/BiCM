@@ -4,6 +4,7 @@ from pathlib import Path
 import numpy as np
 import pytest
 import scipy.sparse
+from scipy import stats
 
 import bicm
 from bicm import (
@@ -527,3 +528,61 @@ def test_perfectly_nested_matrix():
             pvals = flatten(graph.rows_pvals if rows else graph.cols_pvals)
             assert len(pvals) == 3 and all(p == 1.0 for p in pvals.values())
     assert graph.get_rows_projection() == {}
+
+
+# Weighted models: regressions found with the Web of Life networks
+
+def strength_error(graph, matrix):
+    expected = graph.get_bicm_matrix()
+    return max(np.abs(expected.sum(1) / matrix.sum(1) - 1).max(), np.abs(expected.sum(0) / matrix.sum(0) - 1).max())
+
+
+def test_biwcm_discrete_singular_hessian():
+    """Regression: the Newton step of this small network is singular and raised LinAlgError."""
+    matrix = np.array([[5, 1, 0, 0],
+                       [0, 12, 12, 0],
+                       [26, 11, 16, 0],
+                       [4, 2, 1, 0],
+                       [0, 17, 0, 0],
+                       [0, 0, 3, 28]])
+    graph = BipartiteGraph(biadjacency=matrix)
+    graph.solve_tool(print_error=False)
+    assert strength_error(graph, matrix) < 1e-6
+    pvals = graph.get_weighted_pvals_mat()
+    rates = graph.theta_x[:, None] + graph.theta_y[None, :]
+    np.testing.assert_allclose(pvals, stats.geom.sf(matrix, -np.expm1(-rates)), rtol=1e-10)
+    assert (pvals[matrix == 0] == 1).all()
+
+
+@pytest.mark.parametrize("scale", [1e-6, 1e-3, 1.0, 1e4])
+def test_biwcm_continuous_any_scale_of_the_weights(scale):
+    """Regression: with weights much smaller than one the fitnesses exp(-theta) underflow to zero,
+    and the expected matrix and the p-values computed from them were wrong."""
+    rng = np.random.default_rng(11)
+    matrix = rng.exponential(1.0, size=(25, 40)) * rng.lognormal(0, 2, size=(25, 1)) * (rng.random((25, 40)) < 0.5)
+    matrix = matrix[matrix.sum(1) > 0][:, matrix.sum(0) > 0] * scale
+    graph = BipartiteGraph(biadjacency=matrix)
+    assert graph.continuous_weights
+    graph.solve_tool(print_error=False)
+    assert strength_error(graph, matrix) < 1e-8
+    pvals = graph.get_weighted_pvals_mat()
+    np.testing.assert_allclose(pvals, stats.expon.sf(matrix / graph.get_bicm_matrix()), rtol=1e-10)
+    assert np.all((pvals > 0) & (pvals <= 1)) and (pvals[matrix == 0] == 1).all()
+    # The model does not depend on the unit of the weights
+    reference = BipartiteGraph(biadjacency=matrix / scale)
+    reference.solve_tool(print_error=False)
+    np.testing.assert_allclose(graph.get_bicm_matrix() / scale, reference.get_bicm_matrix(), rtol=1e-7)
+    np.testing.assert_allclose(pvals, reference.get_weighted_pvals_mat(), rtol=1e-6)
+
+
+def test_biwcm_continuous_on_integer_weights():
+    rng = np.random.default_rng(7)
+    matrix = rng.poisson(3.0, size=(40, 60)) * (rng.random((40, 60)) < 0.5)
+    matrix = matrix[matrix.sum(1) > 0][:, matrix.sum(0) > 0]
+    graph = BipartiteGraph(biadjacency=matrix)
+    graph.solve_tool(model="biwcm_c", print_error=False)
+    assert graph.continuous_weights and strength_error(graph, matrix) < 1e-8
+    validated = [graph.get_validated_matrix(significance=0.05, validation_method=method).sum()
+                 for method in ("bonferroni", "fdr", "global")]
+    assert validated[0] <= validated[1] <= validated[2]
+    assert validated[2] == (graph.get_weighted_pvals_mat() <= 0.05).sum()

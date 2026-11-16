@@ -854,6 +854,13 @@ class BipartiteGraph:
             else:
                 r_avg_mat = bnef.bicm_from_fitnesses(self.x[self.nonfixed_rows], self.y[self.nonfixed_cols])
             self.avg_mat[self.nonfixed_rows[:, None], self.nonfixed_cols] = np.copy(r_avg_mat)
+        else:
+            # Perfectly nested matrix: every link is certain and there is nothing to solve.
+            # The fitnesses are not defined: the probabilities are all in the average matrix.
+            self.x = np.zeros(self.n_rows)
+            self.y = np.zeros(self.n_cols)
+            self.dict_x = {self.rows_dict[i]: 0.0 for i in range(self.n_rows)}
+            self.dict_y = {self.cols_dict[j]: 0.0 for j in range(self.n_cols)}
 
     def _solve_bicm_light(self):
         """

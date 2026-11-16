@@ -1,0 +1,4 @@
+# Downloaded networks, results and the old version of bicm are created by the notebook
+data/
+results/
+bicm_old/

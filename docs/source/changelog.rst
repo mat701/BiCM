@@ -24,8 +24,11 @@ Numerical accuracy and fixed bugs. **Please re-run your analysis if you are affe
 * ``get_validated_matrix`` counted the couples of nodes of one layer as the number of tests, instead of the entries of the matrix. The p-values of the links of binary networks were overwritten by those of the weighted formula.
 * A projection with ``alpha >= 1`` on the columns layer used the number of rows.
 * ``get_bicm_matrix`` returned nan for the nodes linked to a whole layer when the graph was not initialized with a dense matrix.
+* The projections failed on perfectly nested networks, where every link is certain: they now return p-values equal to one.
 * :class:`~bicm.poibin.PoiBin` computes the distribution with an exact convolution: its p-values are accurate also when extremely small.
 * In :mod:`bicm.wbnm` the analytical p-values are computed in logarithms, the Monte Carlo p-values cannot be zero any more, and the multiple testing correction of the projections is applied to the distinct couples of nodes only.
+
+Benchmark: the notebook ``benchmarks/web_of_life/web_of_life_benchmark.ipynb`` runs versions 3.5 and 4.0 on all the networks of the `Web of Life <https://www.web-of-life.es/>`_ database and compares running times, p-values and validated links.
 
 Differences from the two packages that were merged:
 

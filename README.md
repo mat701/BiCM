@@ -133,6 +133,8 @@ The sampling functions accept a `seed` argument (an integer or a `numpy.random.G
 
 See a more detailed walkthrough in **tests/bicm_test** or **tests/biwcm_test** notebooks, or check out the API in the documentation.
 
+The notebook **benchmarks/web_of_life/web_of_life_benchmark** compares versions 3.5 and 4.0 on all the networks of the [Web of Life](https://www.web-of-life.es/) database: running times, p-values and validated links.
+
 ## Development
 
 To install the package from source together with the test dependencies and run the test suite:

@@ -511,3 +511,18 @@ def test_weighted_link_pvalues():
     huge = BipartiteGraph(biadjacency=int_mat * 10**6)
     huge.solve_tool(print_error=False)
     assert not np.isnan(huge.get_weighted_pvals_mat()).any()
+
+
+def test_perfectly_nested_matrix():
+    """Regression: every link is certain, nothing is solved and the projections crashed."""
+    nested = np.array([[1, 1, 1], [1, 1, 0], [1, 0, 0]])
+    graph = BipartiteGraph(biadjacency=nested)
+    graph.solve_tool(print_error=False)
+    np.testing.assert_array_equal(graph.get_bicm_matrix(), nested)
+    for method in ("poisson", "poibin", "normal", "rna"):
+        for rows in (True, False):
+            with pytest.warns(bicm.BiCMWarning, match="No V-motifs"):
+                graph.compute_projection(rows=rows, approx_method=method)
+            pvals = flatten(graph.rows_pvals if rows else graph.cols_pvals)
+            assert len(pvals) == 3 and all(p == 1.0 for p in pvals.values())
+    assert graph.get_rows_projection() == {}
